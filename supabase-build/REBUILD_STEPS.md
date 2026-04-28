@@ -10,7 +10,8 @@ Run these **in order** in the Supabase SQL Editor (one file per run). Do not wra
 | 4 | `04_rls_policies.sql` |
 | 5 | `05_storage.sql` |
 | 6 | `06_billing_subscriptions.sql` |
-| 7+ | `08_migrate_legacy_billing_column_names.sql` (optional, only if upgrading an older DB) |
+| 7 | `09_subscription_limits_enforcement.sql` (org / project / seat caps) |
+| 8+ | `08_migrate_legacy_billing_column_names.sql` (optional, only if upgrading an older DB) |
 
 ## After the core six steps
 
@@ -39,7 +40,7 @@ Run `fix_org_select_policy.sql` once (updates SELECT so owners always see their 
 
 ## Folder contents
 
-- `01_schema.sql` … `06_billing_subscriptions.sql` — required rebuild.
+- `01_schema.sql` … `07_drop_stripe_columns_if_present.sql` — see table above; `09_subscription_limits_enforcement.sql` enforces caps at insert time (run after `06`).
 - `08_migrate_legacy_billing_column_names.sql` — optional; merge legacy `paddle_*`, `stripe_*`, or other prefixed provider columns into unified `billing_*` columns.
 - `07_drop_stripe_columns_if_present.sql` — optional; only if you still have stripe-only columns from an old migration (subset of what `08` does).
 - `backfill_profiles_from_auth.sql` — optional backfill only.

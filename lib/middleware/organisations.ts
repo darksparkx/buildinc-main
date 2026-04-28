@@ -1,11 +1,30 @@
 // lib/middleware/organisations.ts
+import { preflightCreateOrganisation } from "@/lib/billing/subscriptionPreflight";
+import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
 import { organisationDB } from "@/lib/supabase/db/organisationDB";
-import { IOrganisation, IOrganisationDB } from "../types";
+import { useEntitlementsStore } from "@/lib/store/entitlementsStore";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
+import { useProfileStore } from "@/lib/store/profileStore";
+import { IOrganisation, IOrganisationDB } from "../types";
 import { organisationMemberDB } from "../supabase/db/organisationMemberDB";
 
 export async function addOrganisation(organisation: IOrganisation) {
 	try {
+		const profile = useProfileStore.getState().profile;
+		const entitlements = useEntitlementsStore.getState().entitlements;
+		const ownedOrganisations = Object.values(
+			useOrganisationStore.getState().organisations,
+		);
+		const gate = preflightCreateOrganisation({
+			profile,
+			entitlements,
+			ownerId: organisation.owner,
+			ownedOrganisations,
+		});
+		if (!gate.ok) {
+			throw new Error(gate.message);
+		}
+
 		// Convert IOrganisation to IOrganisationDB by extracting only the DB fields
 		const organisationData: IOrganisationDB = {
 			id: crypto.randomUUID(),
@@ -27,6 +46,10 @@ export async function addOrganisation(organisation: IOrganisation) {
 
 		return result;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		const e = error as { message?: string; code?: string; details?: string };
 		console.error("Error adding organisation:", e?.message, e?.code, e?.details, error);
 		throw error;

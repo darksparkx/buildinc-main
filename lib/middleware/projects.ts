@@ -1,13 +1,18 @@
 // lib/middleware/projects.ts
+import { preflightCreateProject } from "@/lib/billing/subscriptionPreflight";
+import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
 import { createClient } from "@/lib/supabase/client";
 import { projectDB } from "@/lib/supabase/db/projectDB";
+import { useEntitlementsStore } from "@/lib/store/entitlementsStore";
+import { useOrganisationStore } from "@/lib/store/organisationStore";
+import { useProfileStore } from "@/lib/store/profileStore";
+import { useProjectStore } from "@/lib/store/projectStore";
 import {
 	IProject,
 	IProjectCreationData,
 	IProjectDB,
 	IProjectMemberDB,
 } from "../types";
-import { useProjectStore } from "@/lib/store/projectStore";
 import { projectMemberDB } from "../supabase/db/projectMemberDB";
 
 export async function addProject(project: IProjectCreationData) {
@@ -45,9 +50,11 @@ export async function addProject(project: IProjectCreationData) {
 			category: project.category,
 		};
 
+		let orgRow: { id: string; owner: string } | null = null;
+
 		// Same conditions as RLS projects_insert_owner: must see org as owner or member.
 		if (orgId) {
-			const { data: orgRow, error: orgLookupError } = await supabase
+			const { data: fetchedOrg, error: orgLookupError } = await supabase
 				.from("organisations")
 				.select("id, owner")
 				.eq("id", orgId)
@@ -58,11 +65,12 @@ export async function addProject(project: IProjectCreationData) {
 					`Could not load organisation: ${orgLookupError.message}`
 				);
 			}
-			if (!orgRow) {
+			if (!fetchedOrg) {
 				throw new Error(
 					"This organisation is not visible to your account (missing row, or you are not the owner or a member). Check Table Editor: organisations + organisation_members for this org id."
 				);
 			}
+			orgRow = fetchedOrg;
 
 			const isOrgOwner = orgRow.owner === user.id;
 			if (!isOrgOwner) {
@@ -87,6 +95,28 @@ export async function addProject(project: IProjectCreationData) {
 
 		}
 
+		const billingSubscriberId =
+			orgId && orgRow ? orgRow.owner : user.id;
+		const profile = useProfileStore.getState().profile;
+		const entitlements = useEntitlementsStore.getState().entitlements;
+		const ownedOrgIds = Object.values(
+			useOrganisationStore.getState().organisations,
+		)
+			.filter((o) => o.owner === billingSubscriberId)
+			.map((o) => o.id);
+		const projects = Object.values(useProjectStore.getState().projects);
+		const preflight = preflightCreateProject({
+			profile,
+			entitlements,
+			billingSubscriberId,
+			currentUserId: user.id,
+			ownedOrgIds,
+			projects,
+		});
+		if (!preflight.ok) {
+			throw new Error(preflight.message);
+		}
+
 		const result = await projectDB.addProject(projectData);
 
 		// Update store with the new project (basic data only)
@@ -102,6 +132,10 @@ export async function addProject(project: IProjectCreationData) {
 
 		return result;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		const e = error as { message?: string; code?: string; details?: string };
 		console.error("Error adding project:", e?.message, e?.code, e?.details, error);
 		throw error;

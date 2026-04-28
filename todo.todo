@@ -58,16 +58,16 @@ TODO:
 
     when makign an org, assign a bdget and be able to change it and then we can assign budget to projects from that org
  list (billing + beta — manual unlock now; gateway later):
-    Phase A — Subscription truth
-        A1 subscriberStatus helpers (active plan, status, period end, cap interpretation) DONE
-        A2 load subscriber_entitlements with session / pass into app DONE
-        A3 owner shell rule: active subscriber (+ optional owns org), not signup-time admin DONE
-        A4 StoreHydrator branches on that rule DONE
+    + Phase A — Subscription truth
+        + A1 subscriberStatus helpers (active plan, status, period end, cap interpretation) DONE
+        + A2 load subscriber_entitlements with session / pass into app DONE
+        + A3 owner shell rule: active subscriber (+ optional owns org), not signup-time admin DONE
+        + A4 StoreHydrator branches on that rule DONE
     Phase B — Enforcement
-        B1 block org create unless active subscriber; link /billing
-        B2 max_orgs = count orgs where owner = user vs max_orgs
-        B3 max_projects (rule: under owned orgs)
-        B4 max_users / seats (define rule; enforce on invite)
+        + B1 block org create unless active subscriber; link /billing
+        + B2 max_orgs = count orgs where owner = user vs max_orgs
+        + B3 max_projects (rule: under owned orgs + personal projects)
+        + B4 max_users / seats (distinct members in scope; reuse does not consume another seat)
     Phase C — Gates & employees
         C1 soft or hard gate for inactive subscription (decide)
         C2 employee empty states + same auth, no org create

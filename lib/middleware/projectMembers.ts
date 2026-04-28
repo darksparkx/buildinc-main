@@ -1,6 +1,7 @@
 // lib/middleware/projectMembers.ts
 import { projectMemberDB } from "@/lib/supabase/db/projectMemberDB";
 import { profileDB } from "@/lib/supabase/db/profileDB";
+import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
 import { IProjectProfile, IProjectMemberDB, IProfileDB } from "../types";
 import { useProjectMemberStore } from "@/lib/store/projectMemberStore";
 
@@ -37,6 +38,10 @@ export async function addProjectMember_DBONLY(
 
 		return projectProfile;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		console.error("Error adding project member:", error);
 		throw error;
 	}
@@ -50,6 +55,10 @@ export async function addProjectMember(
 		const projectProfile = await createProjectProfile(result);
 		return projectProfile;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		console.error("Error adding project member:", error);
 		throw error;
 	}

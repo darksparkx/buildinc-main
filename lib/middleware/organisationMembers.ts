@@ -1,6 +1,7 @@
 // lib/middleware/organisationMembers.ts
 import { organisationMemberDB } from "@/lib/supabase/db/organisationMemberDB";
 import { profileDB } from "@/lib/supabase/db/profileDB";
+import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
 import {
 	IOrganisationProfile,
 	IOrganisationMemberDB,
@@ -41,6 +42,10 @@ export async function addOrganisationMember(
 
 		return organisationProfile;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		console.error("Error adding organisation member:", error);
 		throw error;
 	}
@@ -54,6 +59,10 @@ export async function addOrganisationMember_DBONLY(
 
 		return organisationProfile;
 	} catch (error) {
+		const mapped = subscriptionLimitErrorMessage(error);
+		if (mapped) {
+			throw new Error(mapped);
+		}
 		console.error("Error adding organisation member:", error);
 		throw error;
 	}
