@@ -23,11 +23,29 @@ import {
 	cleanupRealtimeListeners,
 	initRealtimeListeners,
 } from "@/lib/supabase/realtimeClient";
+import { parseSubscriberEntitlementsRow } from "@/lib/billing/parseSubscriberEntitlementsRow";
+import { usesOwnerShell } from "@/lib/billing/ownerShell";
+import { useEntitlementsStore } from "@/lib/store/entitlementsStore";
 import { IProfile } from "@/lib/types";
 import { useEffect } from "react";
 
-export const StoreHydrator = ({ profile }: { profile: IProfile | null }) => {
+export const StoreHydrator = ({
+	profile,
+	subscriberEntitlementsRaw,
+}: {
+	profile: IProfile | null;
+	subscriberEntitlementsRaw: Record<string, unknown> | null;
+}) => {
 	const { setProfile } = useProfileStore();
+
+	useEffect(() => {
+		if (!subscriberEntitlementsRaw) {
+			useEntitlementsStore.getState().clearEntitlements();
+			return;
+		}
+		const parsed = parseSubscriberEntitlementsRow(subscriberEntitlementsRaw);
+		useEntitlementsStore.getState().setEntitlements(parsed);
+	}, [subscriberEntitlementsRaw]);
 	const { updatePhase } = usePhaseStore();
 	const { getPhaseStatus } = projectDetails();
 
@@ -52,16 +70,22 @@ export const StoreHydrator = ({ profile }: { profile: IProfile | null }) => {
 	useEffect(() => {
 		if (!profile) return;
 		setProfile(profile);
-		loadData(profile);
+		loadData(profile, subscriberEntitlementsRaw);
 		initRealtimeListeners(profile);
 		return cleanupRealtimeListeners;
-	}, [profile]);
+	}, [profile, subscriberEntitlementsRaw]);
 
-	const loadData = async (userProfile: IProfile) => {
+	const loadData = async (
+		userProfile: IProfile,
+		rawEntitlements: Record<string, unknown> | null,
+	) => {
 		try {
 			await getRequestsByUserId(userProfile.id);
 			await getAllProfiles();
-			if (userProfile.admin) await loadAdminData(userProfile);
+			const entRow = rawEntitlements
+				? parseSubscriberEntitlementsRow(rawEntitlements)
+				: null;
+			if (usesOwnerShell(userProfile, entRow)) await loadAdminData(userProfile);
 			else await loadUserData(userProfile);
 		} catch (error) {
 			console.error("Error loading user data:", error);

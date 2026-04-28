@@ -57,3 +57,30 @@ TODO:
     setup billing and payment gateway
 
     when makign an org, assign a bdget and be able to change it and then we can assign budget to projects from that org
+ list (billing + beta — manual unlock now; gateway later):
+    Phase A — Subscription truth
+        A1 subscriberStatus helpers (active plan, status, period end, cap interpretation) DONE
+        A2 load subscriber_entitlements with session / pass into app DONE
+        A3 owner shell rule: active subscriber (+ optional owns org), not signup-time admin DONE
+        A4 StoreHydrator branches on that rule DONE
+    Phase B — Enforcement
+        B1 block org create unless active subscriber; link /billing
+        B2 max_orgs = count orgs where owner = user vs max_orgs
+        B3 max_projects (rule: under owned orgs)
+        B4 max_users / seats (define rule; enforce on invite)
+    Phase C — Gates & employees
+        C1 soft or hard gate for inactive subscription (decide)
+        C2 employee empty states + same auth, no org create
+    Phase D — Billing UX
+        D1 nav / settings link to /billing
+        D2 /billing copy (manual code; de-emphasize gateway)
+        D3 refresh entitlements after unlock (no full reload)
+    Phase E — Polish
+        E1 settings: show plan, status, caps, dates
+        E2 user menu / microcopy fixes
+        E3 surface /statistics for owner shell if kept
+    Phase F — Ship
+        F1 prod env + Supabase auth URLs/emails
+        F2 legal copy for manual / beta billing
+        F3 beta comms + smoke checklist (subscriber vs member)
+    Later: payment provider checkout + webhooks; Capacitor/Play; job costing/Tally; payouts

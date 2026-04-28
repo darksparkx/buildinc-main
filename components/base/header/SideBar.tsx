@@ -2,13 +2,13 @@
 import React from "react";
 import Link from "next/link";
 import SideBarItems from "./SideBarItems";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { IProfile } from "@/lib/types";
 import { LogOutIcon, User } from "lucide-react";
 import { logout } from "./UserDropdown";
-import { useRouter } from "next/navigation";
 
 const SideBar = ({ profile }: { profile: IProfile | null }) => {
-	const router = useRouter();
+	const ownerShell = useUsesOwnerShell(profile);
 	if (!profile) {
 		// redirect and don't render until profile exists
 		window.location.href = "/";
@@ -48,7 +48,7 @@ const SideBar = ({ profile }: { profile: IProfile | null }) => {
 							{profile?.name}
 						</span>
 						<span className="text-xs text-muted-foreground">
-							{profile?.admin ? "Admin" : "User"}
+							{ownerShell ? "Admin" : "User"}
 						</span>
 					</div>
 				</div>

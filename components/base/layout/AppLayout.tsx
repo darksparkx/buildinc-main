@@ -18,10 +18,13 @@ const IDLE_SIGN_OUT_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 export function AppLayout({
 	children,
 	profile,
+	subscriberEntitlementsRaw,
 	user,
 }: {
 	children: React.ReactNode;
 	profile: IProfile | null;
+	/** Raw row for client parse (RSC-safe JSON). */
+	subscriberEntitlementsRaw: Record<string, unknown> | null;
 	user: User | null;
 }) {
 	const supabase = createClient();
@@ -70,7 +73,10 @@ export function AppLayout({
 		>
 			<div className=" min-h-screen min-w-screen">
 				<Toaster />
-				<StoreHydrator profile={profile} />
+				<StoreHydrator
+					profile={profile}
+					subscriberEntitlementsRaw={subscriberEntitlementsRaw}
+				/>
 				{user && <TopBar profile={profile} />}
 				{user && <SideBar profile={profile} />}
 				{user ? (

@@ -120,6 +120,7 @@ import { usePhaseStore } from "../store/phaseStore";
 import { useTaskStore } from "../store/taskStore";
 import { useMaterialStore } from "../store/materialStore";
 import { useRequestStore } from "../store/requestStore";
+import { useEntitlementsStore } from "../store/entitlementsStore";
 
 export function ProjectIcon({ className = "" }: { className?: string }) {
 	return <Box className={cn(className)} />;
@@ -150,6 +151,7 @@ export function ClearData() {
 	useTaskStore.getState().clearTasks();
 	useMaterialStore.getState().clearMaterials();
 	useRequestStore.getState().clearRequests();
+	useEntitlementsStore.getState().clearEntitlements();
 
 	// Optionally clear localStorage if data is persisted there
 

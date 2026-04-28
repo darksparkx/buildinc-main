@@ -61,6 +61,7 @@ export async function updateSession(request: NextRequest) {
 		pathname === "/" ||
 		pathname.startsWith("/login") ||
 		pathname.startsWith("/auth") ||
+		pathname.startsWith("/api/payment/webhook") ||
 		PUBLIC_PATHS.has(pathname);
 
 	if (!isPublicPath && !user) {

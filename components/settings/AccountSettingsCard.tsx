@@ -13,6 +13,7 @@ import { Label } from "@/components/base/ui/label";
 import { Textarea } from "@/components/base/ui/textarea";
 import { modalButtonConfirmClass } from "@/lib/functions/modalButtonStyles";
 import { updateProfile } from "@/lib/middleware/profiles";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 
 export function AccountSettingsCard() {
 	const profile = useProfileStore((s) => s.profile);
+	const ownerShell = useUsesOwnerShell(profile);
 	const [name, setName] = useState("");
 	const [bio, setBio] = useState("");
 	const [saving, setSaving] = useState(false);
@@ -74,7 +76,7 @@ export function AccountSettingsCard() {
 							<Shield className="h-4 w-4" aria-hidden />
 						</span>
 						<p className="text-sm font-medium">
-							{profile.admin ? "Admin" : "Member"}
+							{ownerShell ? "Admin" : "Member"}
 						</p>
 					</div>
 					<p className="text-xs text-muted-foreground">

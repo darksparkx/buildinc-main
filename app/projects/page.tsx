@@ -5,6 +5,7 @@ import { useProfileStore } from "@/lib/store/profileStore";
 import { useProjectStore } from "@/lib/store/projectStore";
 import { useRequestStore } from "@/lib/store/requestStore";
 import { usePhaseStore } from "@/lib/store/phaseStore";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 export default function Page() {
 	const profile = useProfileStore((state) => state.profile);
 
@@ -14,13 +15,13 @@ export default function Page() {
 
 	if (!profile || !projects) return <LoadingSpinner />;
 
-	// console.log("phases in page.tsx", phases);
+	const ownerShell = useUsesOwnerShell(profile);
 
 	return (
 		<Projects
 			projects={Object.values(projects)}
 			phases={Object.values(phases)}
-			admin={profile.admin}
+			admin={ownerShell}
 			requests={requests}
 		/>
 	);

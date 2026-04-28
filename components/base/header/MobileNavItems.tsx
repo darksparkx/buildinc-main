@@ -1,5 +1,6 @@
 "use client";
 import { navItems } from "@/lib/constants/navitems";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import clsx from "clsx";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +10,7 @@ import { IProfile } from "@/lib/types";
 
 const MobileNavItems = ({ profile }: { profile: IProfile }) => {
 	const pathname = usePathname();
+	const ownerShell = useUsesOwnerShell(profile);
 
 	return (
 		<div className="fixed inset-x-0 bottom-0 z-50 flex justify-around border-t border-primary/10 bg-background p-2 lg:hidden ">
@@ -16,8 +18,8 @@ const MobileNavItems = ({ profile }: { profile: IProfile }) => {
 				const isActive = pathname === item.href;
 				if (!item.mobile) return null;
 				if (
-					(item.admin && profile.admin) ||
-					(item.user && !profile.admin)
+					(item.admin && ownerShell) ||
+					(item.user && !ownerShell)
 				) {
 					if (item.label === "Profile") {
 						return (

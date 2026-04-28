@@ -13,6 +13,7 @@ export default async function AsyncAppLayout({
 	} = await supabase.auth.getUser();
 
 	let profile: IProfile | null = null;
+	let subscriberEntitlementsRaw: Record<string, unknown> | null = null;
 	if (user) {
 		const { data, error } = await supabase
 			.from("profiles")
@@ -25,11 +26,24 @@ export default async function AsyncAppLayout({
 		} else {
 			profile = data as IProfile;
 		}
+
+		const { data: entRow, error: entError } = await supabase
+			.from("subscriber_entitlements")
+			.select("*")
+			.eq("subscriber_id", user.id)
+			.maybeSingle();
+
+		if (entError) {
+			console.error("Error getting subscriber_entitlements:", entError);
+		} else if (entRow) {
+			subscriberEntitlementsRaw = entRow as Record<string, unknown>;
+		}
 	}
 	return (
 		// <ClearDataStorage>
 		<AppLayout
 			profile={profile}
+			subscriberEntitlementsRaw={subscriberEntitlementsRaw}
 			user={user}
 		>
 			{children}

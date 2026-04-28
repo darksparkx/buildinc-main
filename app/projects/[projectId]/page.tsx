@@ -49,8 +49,5 @@ export default function Page({
 	}
 	if (!project) return <LoadingSpinner />;
 
-	if (profile.admin) {
-		return <ProjectDetails />;
-	}
-	return <div>Access denied</div>;
+	return <ProjectDetails />;
 }

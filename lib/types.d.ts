@@ -19,6 +19,14 @@ export type requestType =
 	| "JoinOrganisation"
 	| "JoinProject";
 
+/** Matches public.subscription_plan_enum in Postgres (06_billing_subscriptions.sql). */
+export type SubscriptionPlan =
+	| "none"
+	| "starter"
+	| "professional"
+	| "enterprise"
+	| "custom";
+
 export type requestData = {
 	amount?: number;
 	quantity?: number;
@@ -59,6 +67,25 @@ export interface IProfileDB {
 	name: string;
 	bio: string;
 	admin: boolean;
+}
+
+/** public.subscriber_entitlements — billing row for the paying subscriber (profile id). */
+export interface ISubscriberEntitlementsDB {
+	subscriber_id: string;
+	plan: SubscriptionPlan;
+	status: string;
+	billing_interval: string | null;
+	/** e.g. payment, stripe, paddle, manual */
+	billing_provider: string | null;
+	billing_customer_id: string | null;
+	billing_subscription_id: string | null;
+	current_period_start: Date | null;
+	current_period_end: Date | null;
+	trial_ends_at: Date | null;
+	max_orgs: number | null;
+	max_projects: number | null;
+	max_users: number | null;
+	updated_at: Date;
 }
 
 export interface IOrganisationDB {

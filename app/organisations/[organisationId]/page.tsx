@@ -38,8 +38,5 @@ export default function Page({
 	}
 	if (!organisation) return <LoadingSpinner />;
 
-	if (profile.admin) {
-		return <OrganisationDetails />;
-	}
-	return <div>Access denied</div>;
+	return <OrganisationDetails />;
 }

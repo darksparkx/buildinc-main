@@ -4,19 +4,21 @@ import Link from "next/link";
 import { Button } from "@/components/base/ui/button";
 import clsx from "clsx";
 import { navItems } from "@/lib/constants/navitems";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import React from "react";
 import { IProfile } from "@/lib/types";
 
 const SideBarItems = ({ profile }: { profile: IProfile }) => {
 	const pathname = usePathname();
+	const ownerShell = useUsesOwnerShell(profile);
 	return (
 		<div>
 			{navItems.map((item) => {
 				const isActive = pathname === item.href;
 				if (!item.sidebar) return null;
 				if (
-					(item.admin && profile.admin) ||
-					(item.user && !profile.admin)
+					(item.admin && ownerShell) ||
+					(item.user && !ownerShell)
 				) {
 					return (
 						<Link

@@ -4,7 +4,7 @@ import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useRequestStore } from "@/lib/store/requestStore";
-import { useRouter } from "next/navigation";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 
 export default function Page() {
 	const profile = useProfileStore((state) => state.profile);
@@ -13,7 +13,6 @@ export default function Page() {
 	);
 	const requests = Object.values(useRequestStore((state) => state.requests));
 
-	const router = useRouter();
 	if (!profile) {
 		// redirect and don't render until profile exists
 		window.location.href = "/";
@@ -22,10 +21,11 @@ export default function Page() {
 	}
 
 	if (!organisations) return <LoadingSpinner />;
+	const ownerShell = useUsesOwnerShell(profile);
 	return (
 		<Organisations
 			organisations={organisations}
-			admin={profile.admin}
+			admin={ownerShell}
 			requests={requests}
 		/>
 	);
