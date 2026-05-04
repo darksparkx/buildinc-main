@@ -1,5 +1,5 @@
 "use client";
-import CreateProject from "@/components/createProject/CreateProject";
+import dynamic from "next/dynamic";
 import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import { Button } from "@/components/base/ui/button";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
@@ -7,7 +7,11 @@ import { useProfileStore } from "@/lib/store/profileStore";
 import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useNeedsSubscriptionRenewal } from "@/lib/hooks/useNeedsSubscriptionRenewal";
 import Link from "next/link";
-import React from "react";
+
+const CreateProject = dynamic(
+	() => import("@/components/createProject/CreateProject"),
+	{ loading: () => <LoadingSpinner /> },
+);
 
 export default function Page() {
 	const profile = useProfileStore((state) => state.profile);
