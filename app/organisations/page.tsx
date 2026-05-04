@@ -12,6 +12,7 @@ export default function Page() {
 		useOrganisationStore((state) => state.organisations)
 	);
 	const requests = Object.values(useRequestStore((state) => state.requests));
+	const ownerShell = useUsesOwnerShell(profile);
 
 	if (!profile) {
 		// redirect and don't render until profile exists
@@ -21,7 +22,6 @@ export default function Page() {
 	}
 
 	if (!organisations) return <LoadingSpinner />;
-	const ownerShell = useUsesOwnerShell(profile);
 	return (
 		<Organisations
 			organisations={organisations}

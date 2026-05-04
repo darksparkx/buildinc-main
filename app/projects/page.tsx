@@ -12,10 +12,9 @@ export default function Page() {
 	const { projects } = useProjectStore();
 	const { phases } = usePhaseStore();
 	const requests = Object.values(useRequestStore((state) => state.requests));
+	const ownerShell = useUsesOwnerShell(profile);
 
 	if (!profile || !projects) return <LoadingSpinner />;
-
-	const ownerShell = useUsesOwnerShell(profile);
 
 	return (
 		<Projects
