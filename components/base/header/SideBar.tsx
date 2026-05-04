@@ -48,7 +48,7 @@ const SideBar = ({ profile }: { profile: IProfile | null }) => {
 							{profile?.name}
 						</span>
 						<span className="text-xs text-muted-foreground">
-							{ownerShell ? "Admin" : "User"}
+							{ownerShell ? "Admin" : "Member"}
 						</span>
 					</div>
 				</div>

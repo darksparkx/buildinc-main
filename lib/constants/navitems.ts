@@ -1,12 +1,8 @@
 import {
 	Home,
-	Box,
-	BookOpen,
 	Settings,
 	User,
-	Settings2,
 	SettingsIcon,
-	Check,
 	SquareCheckBigIcon,
 	Folder,
 	FileCheck,
@@ -76,7 +72,6 @@ export const navItems = [
 		user: true,
 		admin: true,
 	},
-
 	{
 		href: "/settings",
 		label: "Settings",
@@ -92,8 +87,8 @@ export const navItems = [
 		label: "Statistics",
 		group: "",
 		icon: GalleryHorizontal,
-		sidebar: false,
-		mobile: false,
+		sidebar: true,
+		mobile: true,
 		user: false,
 		admin: true,
 	},

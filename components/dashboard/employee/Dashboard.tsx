@@ -1,9 +1,13 @@
+"use client";
+
 import React from "react";
 import { IProfile, ITask } from "@/lib/types";
 
 import { SummaryCard } from "@/components/base/general/SummaryCard";
-import { CheckSquare, Clock } from "lucide-react";
+import { CheckSquare, Clock, Users } from "lucide-react";
 import DashboardQuickActions from "./DashboardQuickActions";
+import { useOrganisationStore } from "@/lib/store/organisationStore";
+import { useProjectStore } from "@/lib/store/projectStore";
 
 const Dashboard = ({
 	profile,
@@ -12,6 +16,13 @@ const Dashboard = ({
 	profile: IProfile;
 	tasks: ITask[];
 }) => {
+	const orgCount = useOrganisationStore((s) =>
+		Object.keys(s.organisations).length,
+	);
+	const projectCount = useProjectStore((s) =>
+		Object.keys(s.projects).length,
+	);
+	const showTeammateHint = orgCount === 0 && projectCount === 0;
 	const inProgressTasks = tasks.filter((task) => task.status === "Active");
 	const awaitingApprovalTasks = tasks.filter(
 		(task) => task.status === "Reviewing",
@@ -43,6 +54,23 @@ const Dashboard = ({
 						</p>
 					</div>
 				</section>
+
+				{showTeammateHint ? (
+					<div className="flex gap-3 rounded-xl border border-border/60 bg-muted/25 px-4 py-4 text-sm text-muted-foreground ring-1 ring-border/40">
+						<span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/15">
+							<Users className="h-4 w-4" aria-hidden />
+						</span>
+						<div className="min-w-0 space-y-1">
+							<p className="font-medium text-foreground">Teammate account</p>
+							<p className="leading-snug">
+								You&apos;re not on an organisation or project in this app yet.
+								Ask your organisation owner to invite you to an organisation
+								or add you to a project — then lists and tasks will show up
+								here.
+							</p>
+						</div>
+					</div>
+				) : null}
 
 				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
 					<SummaryCard

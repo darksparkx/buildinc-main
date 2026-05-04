@@ -27,6 +27,8 @@ import { cn } from "@/lib/functions/utils";
 type Props = {
 	filteredProjects: IProject[];
 	admin: boolean;
+	projectTotalCount: number;
+	hasActiveFilters: boolean;
 };
 
 function statusVariant(
@@ -122,7 +124,12 @@ function ProjectMobileRow({
 	);
 }
 
-const ProjectTable = ({ filteredProjects, admin }: Props) => {
+const ProjectTable = ({
+	filteredProjects,
+	admin,
+	projectTotalCount,
+	hasActiveFilters,
+}: Props) => {
 	const router = useRouter();
 	const organisations = useOrganisationStore((s) => s.organisations);
 
@@ -264,8 +271,23 @@ const ProjectTable = ({ filteredProjects, admin }: Props) => {
 						</div>
 					</>
 				) : (
-					<div className="mx-4 flex min-h-[10rem] items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground sm:mx-0">
-						No projects match your filters.
+					<div className="mx-4 flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center sm:mx-0">
+						{projectTotalCount === 0 && !admin ? (
+							<p className="max-w-md text-sm text-muted-foreground">
+								No projects yet. When your organisation owner adds you to a
+								project, it will appear here. You use the same login as your
+								team — you don&apos;t need your own paid plan.
+							</p>
+						) : projectTotalCount === 0 && admin && !hasActiveFilters ? (
+							<p className="max-w-md text-sm text-muted-foreground">
+								No projects yet. Use <strong>Create project</strong> above to
+								start one.
+							</p>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								No projects match your filters.
+							</p>
+						)}
 					</div>
 				)}
 			</CardContent>

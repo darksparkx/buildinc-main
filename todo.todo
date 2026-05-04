@@ -57,6 +57,7 @@ TODO:
     setup billing and payment gateway
 
     when makign an org, assign a bdget and be able to change it and then we can assign budget to projects from that org
+    
  list (billing + beta — manual unlock now; gateway later):
     + Phase A — Subscription truth
         + A1 subscriberStatus helpers (active plan, status, period end, cap interpretation) DONE
@@ -69,18 +70,20 @@ TODO:
         + B3 max_projects (rule: under owned orgs + personal projects)
         + B4 max_users / seats (distinct members in scope; reuse does not consume another seat)
     Phase C — Gates & employees
-        C1 soft or hard gate for inactive subscription (decide)
-        C2 employee empty states + same auth, no org create
+        + C1 soft gate: renewal banner + billing CTA when subscription inactive but user owns orgs or still has paid tier on row; create-project copy split (lapsed vs teammate); lapsed owners still hydrate full org data
+        + C2 employee empty states (organisations / projects / dashboard teammate hint); sidebar role "Member"; no org create for members (unchanged)
     Phase D — Billing UX
-        D1 nav / settings link to /billing
-        D2 /billing copy (manual code; de-emphasize gateway)
-        D3 refresh entitlements after unlock (no full reload)
+        + D1 Billing in sidebar + bottom nav (owner shell); Settings → Billing card + /billing link
+        + D2 /billing copy: manual code first (gateway note removed from UI)
+        + D3 After unlock: refetch entitlements, apply to store, runSessionStoreLoad, router.refresh()
     Phase E — Polish
-        E1 settings: show plan, status, caps, dates
-        E2 user menu / microcopy fixes
-        E3 surface /statistics for owner shell if kept
+        + E1 settings Billing card: plan, status badge, provider, period/trial dates, max orgs/projects/members
+        + E2 user menu: name + email (fix bio / wrong “No name” copy)
+        + E3 /statistics in sidebar + mobile nav for owner shell; page placeholder + member redirect
+        E4 add a tutorial for first time users
+        E5 smoke checklist (before ship): 09 limits in DB, org/project/seat caps, errors/toasts, subscriber vs member
     Phase F — Ship
         F1 prod env + Supabase auth URLs/emails
         F2 legal copy for manual / beta billing
-        F3 beta comms + smoke checklist (subscriber vs member)
+        F3 beta comms + final launch pass
     Later: payment provider checkout + webhooks; Capacitor/Play; job costing/Tally; payouts

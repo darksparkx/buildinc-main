@@ -75,6 +75,8 @@ export default function OrganisationDetails() {
 							<ProjectTable
 								filteredProjects={projects}
 								admin={true}
+								projectTotalCount={projects.length}
+								hasActiveFilters={false}
 							/>
 						</div>
 					</TabsContent>

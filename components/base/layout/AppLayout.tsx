@@ -11,6 +11,8 @@ import TopBar from "../header/TopBar";
 import LoadingSpinner from "./LoadingSpinner";
 import { StoreHydrator } from "./StoreHydrator";
 import { Toaster } from "@/components/base/ui/sonner";
+import { SubscriptionRenewalBanner } from "@/components/billing/SubscriptionRenewalBanner";
+import { useNeedsSubscriptionRenewal } from "@/lib/hooks/useNeedsSubscriptionRenewal";
 
 /** Client-side idle cap only; Supabase still refreshes the session in normal use. */
 const IDLE_SIGN_OUT_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
@@ -80,13 +82,7 @@ export function AppLayout({
 				{user && <TopBar profile={profile} />}
 				{user && <SideBar profile={profile} />}
 				{user ? (
-					<div
-						className={`z-30 ml-0 min-h-screen min-w-screen lg:ml-[15rem] lg:max-w-[calc(100%-15rem)] lg:p-6 ${
-							profile ? "mt-14 lg:mt-0" : "mt-14"
-						} h-screen p-4`}
-					>
-						{children}
-					</div>
+					<AuthenticatedMain profile={profile}>{children}</AuthenticatedMain>
 				) : (
 					<div className="ml-0 min-w-screen h-screen z-30">
 						{children}
@@ -96,5 +92,25 @@ export function AppLayout({
 				{user && <MobileNav profile={profile} />}
 			</div>
 		</ThemeProvider>
+	);
+}
+
+function AuthenticatedMain({
+	profile,
+	children,
+}: {
+	profile: IProfile | null;
+	children: React.ReactNode;
+}) {
+	const needsRenewal = useNeedsSubscriptionRenewal();
+	return (
+		<div
+			className={`z-30 ml-0 min-h-screen min-w-screen lg:ml-[15rem] lg:max-w-[calc(100%-15rem)] lg:p-6 ${
+				profile ? "mt-14 lg:mt-0" : "mt-14"
+			} h-screen p-4`}
+		>
+			{profile && needsRenewal ? <SubscriptionRenewalBanner /> : null}
+			{children}
+		</div>
 	);
 }

@@ -49,12 +49,12 @@ const UserDropdown = ({ profile }: { profile: IProfile }) => {
 						<div className="bg-muted border-2 border-dashed rounded-full w-10 h-10 flex items-center justify-center">
 							<User className="w-5 h-5 text-muted-foreground" />
 						</div>
-						<div className="flex flex-col">
+						<div className="flex min-w-0 flex-1 flex-col">
 							<span className="font-semibold truncate">
-								{profile?.email}
+								{profile.name?.trim() || "Account"}
 							</span>
-							<span className="text-xs text-muted-foreground">
-								{profile?.bio || "No name provided"}
+							<span className="truncate text-xs text-muted-foreground">
+								{profile.email}
 							</span>
 						</div>
 					</div>

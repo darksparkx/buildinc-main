@@ -113,6 +113,10 @@ export default function Projects({
 				<ProjectTable
 					filteredProjects={filteredProjects}
 					admin={admin}
+					projectTotalCount={projects.length}
+					hasActiveFilters={
+						searchTerm.trim() !== "" || statusFilter !== "All"
+					}
 				/>
 
 				{!admin && <ProjectMemberRequests requests={requests} />}

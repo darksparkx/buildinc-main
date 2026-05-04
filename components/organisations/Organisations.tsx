@@ -77,6 +77,8 @@ export default function Organisations({
 				<OrgTable
 					filteredOrganisations={filteredOrganisations}
 					admin={admin}
+					organisationTotalCount={organisations.length}
+					hasSearchQuery={searchTerm.trim() !== ""}
 				/>
 
 				{!admin && <OrgMemberRequests requests={requests} />}

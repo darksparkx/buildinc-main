@@ -26,6 +26,8 @@ import { Building2, ChevronRight, FolderOpen, Users } from "lucide-react";
 type Props = {
 	filteredOrganisations: IOrganisation[];
 	admin: boolean;
+	organisationTotalCount: number;
+	hasSearchQuery: boolean;
 };
 
 function OrgMobileMeta({
@@ -67,7 +69,12 @@ function OrgMobileMeta({
 	);
 }
 
-export const OrgTable = ({ filteredOrganisations, admin }: Props) => {
+export const OrgTable = ({
+	filteredOrganisations,
+	admin,
+	organisationTotalCount,
+	hasSearchQuery,
+}: Props) => {
 	const router = useRouter();
 
 	const goToOrg = (orgId: string) => {
@@ -186,8 +193,25 @@ export const OrgTable = ({ filteredOrganisations, admin }: Props) => {
 						</div>
 					</>
 				) : (
-					<div className="mx-4 flex min-h-[10rem] items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center text-sm text-muted-foreground sm:mx-0">
-						No organisations match your search.
+					<div className="mx-4 flex min-h-[12rem] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 px-4 py-10 text-center sm:mx-0">
+						{organisationTotalCount === 0 && !admin ? (
+							<>
+								<p className="max-w-md text-sm text-muted-foreground">
+									You&apos;re signed in as a teammate. You won&apos;t create
+									organisations here — your admin creates the org and invites
+									you. Once you&apos;re added, it will show up in this list.
+								</p>
+							</>
+						) : organisationTotalCount === 0 && admin && !hasSearchQuery ? (
+							<p className="max-w-md text-sm text-muted-foreground">
+								No organisations yet. Use <strong>Create</strong> above to add
+								your first one.
+							</p>
+						) : (
+							<p className="text-sm text-muted-foreground">
+								No organisations match your search.
+							</p>
+						)}
 					</div>
 				)}
 			</CardContent>

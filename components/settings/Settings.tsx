@@ -44,6 +44,7 @@ import AddMaterialModal from "./AddMaterialModal";
 import { SUPPORT_EMAIL, supportMailto } from "@/lib/constants/contact";
 import { AccountSettingsCard } from "./AccountSettingsCard";
 import { AppearanceSettingsCard } from "./AppearanceSettingsCard";
+import { BillingSettingsCard } from "./BillingSettingsCard";
 
 export default function Settings() {
 	const profile = useProfileStore((s) => s.profile);
@@ -111,6 +112,7 @@ export default function Settings() {
 							<span className="text-sm font-medium text-foreground">Account</span>
 						</div>
 						<AccountSettingsCard />
+						<BillingSettingsCard />
 					</TabsContent>
 
 					<TabsContent value="appearance" className="mt-0 space-y-4">
