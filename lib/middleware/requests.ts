@@ -171,6 +171,10 @@ export async function getRequest(id: string): Promise<IRequest> {
 	}
 }
 
+/**
+ * Loads requests where the user is approver or requester (inbox + sent).
+ * RLS may still return additional rows visible via project membership.
+ */
 export async function getRequestsByUserId(userId: string): Promise<IRequest[]> {
 	try {
 		const requests = await requestDB.getRequestsByUserId(userId);

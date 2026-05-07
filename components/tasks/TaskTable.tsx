@@ -20,6 +20,7 @@ import {
 	Loader,
 	Package,
 } from "lucide-react";
+import Link from "next/link";
 import React from "react";
 
 const SECTION_META: Record<
@@ -49,16 +50,12 @@ const TaskTable = ({
 	desc,
 	taskList,
 	emptyMessage,
-	setSelectedTask,
-	setIsTaskDetailOpen,
 }: {
 	section: "active" | "reviewing" | "completed";
 	title: string;
 	desc: string;
 	taskList: ITask[];
 	emptyMessage: string;
-	setSelectedTask: React.Dispatch<React.SetStateAction<ITask | undefined>>;
-	setIsTaskDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
 	const meta = SECTION_META[section];
 	const Icon = meta.icon;
@@ -81,17 +78,12 @@ const TaskTable = ({
 					</div>
 				</div>
 			</CardHeader>
-			<CardContent className="space-y-3 pb-6 sm:px-6">
+			<CardContent className="pb-6 sm:px-6">
 				{taskList.length > 0 ? (
-					<ul className="space-y-3">
+					<ul className="grid grid-cols-1 gap-3 items-stretch md:grid-cols-2 xl:grid-cols-3">
 						{taskList.map((task) => (
-							<li key={task.id}>
-								<TaskCard
-									task={task}
-									section={section}
-									setSelectedTask={setSelectedTask}
-									setIsTaskDetailOpen={setIsTaskDetailOpen}
-								/>
+							<li key={task.id} className="flex min-h-0 min-w-0">
+								<TaskCard task={task} section={section} />
 							</li>
 						))}
 					</ul>
@@ -108,13 +100,9 @@ const TaskTable = ({
 const TaskCard = ({
 	task,
 	section,
-	setSelectedTask,
-	setIsTaskDetailOpen,
 }: {
 	task: ITask;
 	section: "active" | "reviewing" | "completed";
-	setSelectedTask: React.Dispatch<React.SetStateAction<ITask | undefined>>;
-	setIsTaskDetailOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
 	const materials = getTaskMaterialsFromStore(task.id);
 	const projectName = getProjectNameFromPhaseId(task.phaseId);
@@ -129,19 +117,15 @@ const TaskCard = ({
 	}[section];
 
 	return (
-		<button
-			type="button"
+		<Link
+			href={`/tasks/${task.id}`}
 			className={cn(
-				"w-full rounded-xl border p-4 text-left shadow-sm transition-colors",
+				"flex w-full min-h-0 flex-1 flex-col rounded-xl border p-4 text-left shadow-sm transition-colors",
 				"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 				surface,
 			)}
-			onClick={() => {
-				setSelectedTask(task);
-				setIsTaskDetailOpen(true);
-			}}
 		>
-			<div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+			<div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0 flex-1">
 					<h3 className="font-semibold leading-snug">{task.name}</h3>
 					{projectName ? (
@@ -158,13 +142,15 @@ const TaskCard = ({
 				</Badge>
 			</div>
 
-			{task.description ? (
-				<p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
-					{task.description}
-				</p>
-			) : null}
+			<div className="mt-2 min-h-0 flex-1">
+				{task.description ? (
+					<p className="line-clamp-2 text-sm text-muted-foreground">
+						{task.description}
+					</p>
+				) : null}
+			</div>
 
-			<div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+			<div className="mt-auto grid shrink-0 grid-cols-1 gap-2 pt-3 text-sm sm:grid-cols-2">
 				<div className="flex items-center gap-2 text-muted-foreground">
 					<Calendar className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
 					<span>
@@ -197,7 +183,7 @@ const TaskCard = ({
 					</div>
 				)}
 			</div>
-		</button>
+		</Link>
 	);
 };
 

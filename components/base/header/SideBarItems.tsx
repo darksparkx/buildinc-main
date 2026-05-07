@@ -30,6 +30,8 @@ const SideBarItems = ({ profile }: { profile: IProfile }) => {
 								variant="ghost"
 								className={clsx(
 									"w-full rounded-none px-4 py-7 justify-start text-left font-normal",
+									!isActive &&
+										"hover:bg-muted/85 hover:text-foreground dark:hover:bg-accent dark:hover:text-accent-foreground",
 									isActive &&
 										"bg-secondary font-semibold text-secondary-foreground ring-1 ring-border/50 hover:brightness-110 dark:ring-border",
 								)}

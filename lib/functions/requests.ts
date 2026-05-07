@@ -9,7 +9,11 @@ import { getAllProfilesFromStore } from "../middleware/profiles";
 import { getProjectFromStore, updateProject } from "../middleware/projects";
 import { updateRequest } from "../middleware/requests";
 import { getTask, getTaskFromStore, updateTask } from "../middleware/tasks";
+import { describeCompletionBlockers, getPendingTaskWorkflowBlockersForCompletion } from "./taskCompletionBlockers";
 import { IProfile, IRequest } from "../types";
+
+/** Re-export for callers that already import from `requests`. */
+export { getPendingTaskWorkflowBlockersForCompletion } from "./taskCompletionBlockers";
 
 export const getDetailsForRequest = (request: IRequest) => {
 	const allProfiles = getAllProfilesFromStore();
@@ -57,11 +61,21 @@ export const handleAssigment = async (
 	});
 };
 
+/** @returns Whether the task was completed (false if unauthorized or blocked by pending requests). */
 export const handleCompletion = async (
 	request: IRequest,
-	profile: IProfile | null
-) => {
-	if (!profile || profile.id !== request.requestedTo) return;
+	profile: IProfile | null,
+): Promise<boolean> => {
+	if (!profile || profile.id !== request.requestedTo) return false;
+
+	const blockers = getPendingTaskWorkflowBlockersForCompletion(request);
+	if (blockers.length > 0) {
+		const list = describeCompletionBlockers(blockers);
+		toast.error(
+			`Cannot approve completion yet. This task still has pending ${list} request${blockers.length > 1 ? "s" : ""}. Approve or reject those first.`,
+		);
+		return false;
+	}
 
 	toast.info("Completing task and updating project spend...");
 
@@ -83,6 +97,7 @@ export const handleCompletion = async (
 	});
 
 	toast.success("Task completed and project spend updated.");
+	return true;
 };
 
 export const handlePaymentRequest = async (

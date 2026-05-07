@@ -39,13 +39,13 @@ NEXT:
         organisatiopns:
             - let thme leave if they weant
 
-+ add laoding to buttons: DONE
-+ add toasts everywhere: DONE
-+ material costing calculator
-when approving a task for completion, first check if any requests are left automatically
-dont showe budget to supervisor or anyone else othervthan admin
-aadding budget per sq ft
-
+    + add laoding to buttons: DONE
+    + add toasts everywhere: DONE
+    + material costing calculator
+    when approving a task for completion, first check if any requests are left automatically
+    dont showe budget to supervisor or anyone else othervthan admin
+    aadding budget per sq ft
+/**/
 TODO:
     + A front page.
     + A looks make over it
@@ -58,7 +58,7 @@ TODO:
 
     when makign an org, assign a bdget and be able to change it and then we can assign budget to projects from that org
     
- list (billing + beta — manual unlock now; gateway later):
+    billing + beta — manual unlock now; gateway later:
     + Phase A — Subscription truth
         + A1 subscriberStatus helpers (active plan, status, period end, cap interpretation) DONE
         + A2 load subscriber_entitlements with session / pass into app DONE
@@ -87,3 +87,203 @@ TODO:
         F2 legal copy for manual / beta billing
         F3 beta comms + final launch pass
     Later: payment provider checkout + webhooks; Capacitor/Play; job costing/Tally; payouts
+
+/**/
+Master list:
+    Cross-reference: granular stubs remain above (`NEXT`, `TODO`, `billing + beta`)—merge duplicates against this list as you complete work.
+
+    + (P1) Collaboration, workflow, and communication
+        + 1. Unified in-app inbox / notification center (invites, approvals, assignments, completions, rejections)—backed by real queries, not demo UI.
+        - ! 2. Email notifications for high-signal events (invite, approval needed, assignment, rejection, subscription expiring)—with per-user preferences.
+        + 3. In-app comments or threads on tasks (optionally projects)—with @mentions if you add them.
+        + 4. @mentions in comments tied to notification delivery.
+        - ! 5. Task-level activity stream (status, budget, materials)—distinct from global audit.
+        - 6. File attachments other than photos (PDFs, specs, drawings) if users expect document trails.
+        - 7. Version note or “reason for change” on sensitive edits (budget, dates, approvals).
+        - 8. Templates for short messages (“Material delayed”, “Awaiting client sign-off”) for mobile speed.
+        - 9. Shareable deep links to a task/project (logged-in or read-only token for vendors/clients later).
+        + 10. Completion approvals: before approving task completion, auto-check for outstanding requests (material, payment, assignment, etc.) and block or warn.
+
+    (P2) Discovery, navigation, and information architecture
+        1. Global search (orgs, projects, tasks, people)—wire existing cmdk primitive app-wide.
+        2. Recent items and favorites / pinned projects.
+        3. Breadcrumbs on deep pages (project → phase → task).
+        4. Deep linking for every meaningful screen (share URL, refresh-safe).
+        5. Keyboard shortcuts (e.g. open search, go dashboard) for power users on desktop.
+        6. Filters saved as views (“My overdue”, “This site only”).
+        7. Cross-links from dashboard cards into filtered lists.
+        8. Consistent page titles (`metadata` per route) for bookmarks and tabs.
+        9. 404 / error pages with next steps and preserved auth context.
+        10. Organisations list: filters + search (admin backlog).
+        11. Projects list: filters + search (admin backlog).
+        12. Admin home/dashboard: Recent activity component fed by real events (not static demo).
+
+    (P3) Reporting, analytics, and Statistics
+        1. Owner/admin statistics dashboard: throughput, spend vs planned, completion rates, overdue counts.
+        2. Time-range filters and comparison vs previous period.
+        3. Breakdown by organisation / project / phase.
+        4. Export chart/table data as CSV behind tier gates if tiers promise analytics depth.
+        5. Scheduled exports (email CSV weekly)—premium lever.
+        6. Material usage vs planned rollups.
+        7. Approval SLA metrics (time pending).
+        8. Align plan marketing copy with implemented tier differences (no “advanced stats” without delivery).
+        9. Surfaces for project progress and linked tasks on project list/detail (admin backlog).
+        10. Budget per sq ft (organisation and/or project) if required by workflows.
+
+    (P4) Vendors, procurement, and field alignment
+        1. Vendors directory (contact, categories, default terms).
+        2. Link materials / requests to vendors where relevant.
+        3. Purchase or request history per vendor.
+        4. Preferred vendor flags on material types.
+        5. Light price history or last-paid hints when logging spend.
+        6. Material costing calculator in-product.
+        7. Settings: setup/configure material average cost (admin backlog).
+
+    (P5) Permissions, roles, and governance
+        1. Explicit role matrix (owner, admin, manager, contributor, viewer, finance-only, etc.).
+        2. Project-level roles distinct from org-level where needed.
+        3. Field-safe mode: hide sensitive totals for roles that must not see money.
+        4. Invite revocation and expiring invite links.
+        5. Transfer organisation ownership with safeguards.
+        6. Org-level audit export for admins (compliance).
+        7. IP allowlist or SSO—enterprise backlog.
+        8. Organisation member roles: when changing roles, enforce at least one admin remains.
+        9. Project member roles: when changing roles, enforce at least one supervisor remains.
+        10. Financial visibility: do not show budget/spend to supervisors or non-admins—admin-only (UI + RLS aligned).
+        11. Employees: allow voluntarily leaving an organisation (self-remove / leave flow).
+
+    (P6) Billing, subscription, and commercial UX
+        1. In-app subscription status card (plan, renewal/end, limits used vs max).
+        2. Upgrade/downgrade UX copy and enforced transitions—even if fulfillment stays manual for now.
+        3. Invoice / receipt artefact or external link placeholder until gateway lands.
+        4. Grace period policy surfaced in UI when `current_period_end` approaches.
+        5. Seat usage indicator with clear definition of “seat”.
+        6. Fair messaging when limits hit—who must hold the subscription (owner vs member).
+        7. Organisation-level budget: set and edit org budget; allocate from org pool to projects (TODO backlog).
+
+    (P7) Auth, account, and profile
+        1. Email verification UX polish (resend, clear errors).
+        2. Session/security area: password change; sign-out everywhere when supported.
+        3. MFA when policy supports it—especially for paying owners.
+        4. Account deletion UX: confirm modal, consequences, URL suitable for store policies.
+        5. Data export request (“Download my data”) aside from delete.
+        6. Profile completeness prompts (photo, phone for coordination).
+
+    (P8) Mobile, responsive, and Capacitor readiness
+        1. Touch targets and spacing audit on every primary flow.
+        2. Safe areas and scroll containment vs bottom nav / keyboard overlap.
+        3. Pull-to-refresh or explicit refresh where realtime might lag.
+        4. Offline messaging: banner when network drops; eventual queued actions if you add offline writes.
+        5. Biometric app lock (Capacitor)—later.
+        6. Native push (Capacitor): mobile notifications for workflow signals (invites, approvals, assignments, completions, rejections)—real delivery wired to the same events as the in-app inbox, not placeholders; mind Play/App policies. (Moved from former P1.11.)
+        7. Store data safety text aligned with actual SDKs and data flows.
+        8. Mobile responsiveness pass across flows (NEXT general backlog—not only Capacitor shell).
+
+    (P9) Performance and perceived speed
+        1. Route-level `loading.tsx` and skeletons matching final layout (avoid layout jump).
+        2. List virtualization if tables grow large.
+        3. Image optimization pipeline for uploads (caps, optional client compression).
+        4. Pagination or infinite scroll on heavy lists.
+        5. Debounced search and filters.
+        6. Realtime subscription hygiene: unsubscribe on unmount; avoid duplicate channels on navigation.
+        7. Audit authenticated API chatter for redundant fetches.
+        8. Database optimisation (indexes, hot queries) alongside recurring RLS reviews (NEXT general backlog).
+
+    (P10) Accessibility (WCAG-minded)
+        1. Focus order and visible focus rings on custom components.
+        2. Screen reader labels on icon-only buttons (sidebar, mobile nav).
+        3. Form errors tied to fields (`aria-describedby`).
+        4. Colour contrast pass on text and charts.
+        5. Respect `prefers-reduced-motion` where Framer Motion runs.
+        6. Skip link to main content on authenticated shell.
+
+    (P11) Internationalisation and locale
+        1. Locale-ready dates and numbers (centralise ₹ and formatting).
+        2. Timezone clarity on deadlines (local vs org timezone).
+        3. i18n string architecture—even if English-only at launch.
+
+    (P12) Security and abuse resistance
+        1. Rate limiting on sensitive APIs (`unlock-with-code`, auth-adjacent routes).
+        2. CAPTCHA or backoff on signup/login if abuse appears.
+        3. Content Security Policy and standard security headers on Vercel.
+        4. Keep webhook signature verification consistent across payment paths.
+        5. Periodic audit: service role never in client bundles.
+        6. RLS regression checklist after schema/policy changes; no prod dev “disable RLS” scripts.
+        7. Full security code review with tracked remediation (TODO backlog).
+
+    (P13) Compliance, privacy, and trust surfaces
+        1. Privacy/terms/cookies reviewed against actual analytics, email, Capacitor SDKs.
+        2. Cookie consent if non-essential cookies or marketing pixels ship.
+        3. Subprocessors list (Supabase, Vercel, email, error tracker).
+        4. Data retention statement (tasks, photos, logs)—optional automated purge later.
+        5. Incident channel (status page or `/status` later).
+        6. Privacy policy, terms of service, cookies/data pages: keep deployed copy aligned with actual product, billing mode, and SDKs (TODO backlog).
+
+    (P14) Observability and supportability
+        1. Error tracking (e.g. Sentry) with scrubbed user/org context.
+        2. Structured logs on API routes with correlation ids.
+        3. Support runbook or light admin tools for common fixes (stuck invite, wrong tier).
+        4. Feature flags for risky launches (statistics v1, vendors v1).
+
+    (P15) QA depth
+        1. `next build` in CI so broken deploys fail PRs.
+        2. E2E: signup → org → project → task → approval critical path.
+        3. Contract tests on entitlement parsing and limit enforcement.
+        4. Cross-browser matrix (Chrome, Safari, Firefox; mobile Safari).
+        5. Optional axe accessibility scan in CI.
+        6. Smoke checklist before ship: migration `09` limits applied in prod DB; org/project/seat caps; error surfaces + toasts; subscriber vs member journeys (Phase E5).
+        7. Production Supabase: Auth URL configuration, redirect URLs, email templates verified end-to-end (Phase F1).
+        8. Keep baseline UX: new flows ship with button loading states + toast/error feedback (legacy NEXT items marked DONE).
+
+    (P16) Marketing, SEO, and store-facing polish
+        1. Landing: screenshots and sections matching real UI; pricing honesty vs code unlock.
+        2. `robots.txt` and `sitemap.xml` if public discovery matters.
+        3. `manifest.json`, icons, theme colour for install/PWA feel before Capacitor.
+        4. Open Graph / Twitter assets per major public route.
+        5. Canonical URLs and `NEXT_PUBLIC_SITE_URL` correctness for redirects.
+        6. Front page / marketing landing iteration (TODO backlog—copy, structure, proof points).
+        7. Sitewide visual makeover pass (TODO backlog—typography, spacing, hero, screenshots).
+
+    (P17) Microcopy, empty states, and onboarding
+        1. First-run checklist on dashboard (dismissible, progress).
+        2. Empty states with one primary CTA per list view.
+        3. Tooltip glossary for domain terms (phase, approval, spend vs planned).
+        4. Inline validation on long forms (create project, materials).
+        5. Success copy that states what happens next—not only toasts.
+        6. Guided tutorial or first-run tour for new accounts (Phase E4).
+
+    (P18) Visual and brand consistency
+        1. Dark mode audit (charts, borders, banners).
+        2. Spacing scale pass—cards, tables, modals.
+        3. Distinct loading vs empty vs error visuals everywhere.
+        4. Light illustration/iconography on key empty states.
+        5. Colour scheme refinement pass (NEXT general backlog).
+
+    (P19) Integrations and extensibility (longer horizon)
+        1. Calendar export (iCal) for task deadlines.
+        2. Outbound webhooks (“task completed”) for customer systems.
+        3. Zapier/Make or CSV SFTP—enterprise storyline.
+        4. Accounting-friendly export formats (generic ledger CSV).
+        5. Payment gateway: checkout + subscription webhooks when moving beyond manual unlock (`Later:` backlog).
+        6. Capacitor Android / Play Store packaging when going native (`Later:` backlog).
+        7. Job costing / Tally (or equivalent accounting) integration (`Later:` backlog).
+        8. Payouts workflow if you pay subcontractors/suppliers through the product (`Later:` backlog).
+
+    (P20) Codebase cleanup tied to polish
+        + 1. Remove or replace demo notification UI — done: `InboxBell` + deleted `DashboardNotifications`.
+        2. Wire command palette globally once search exists.
+        3. Fix nav duplication / consistency (`navitems.ts` duplicate Settings entries).
+        4. Align Statistics nav visibility with owner shell and future tier rules.
+        5. Project details: fix used budget not showing (admin backlog).
+        6. Create Project: save custom templates in DB and list them in the template picker (admin backlog).
+        7. Project details: ship complete Settings tab (admin backlog).
+        8. Admin Settings: finish remaining screens (overlap with material averages—see P4).
+        9. Vendors admin area: implement end-to-end (screens + API + RLS)—full scope under P4.
+
+    (P21) Billing beta — close-out checklist (internal phases B–F)
+        1. Phase B–D: verify in prod—subscriber gates, org/project/seat caps, renewal banner + employee empty states, billing in nav, post-unlock entitlement refresh.
+        2. Phase E: billing card detail (plan, status, provider, periods, caps); user menu shows correct name/email.
+        3. Phase E: `/statistics` routes + owner vs member behaviour matches shipping intent.
+        4. Phase F: legal copy fits manual/beta billing; beta comms + final launch pass.
+        5. Track payment-gateway cutover separately under P19.5 when leaving beta.
+

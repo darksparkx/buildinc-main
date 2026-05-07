@@ -84,6 +84,11 @@ const TaskDetailModal = ({
 								<TaskDetails
 									selectedTask={selectedTask}
 									projectName={projectName}
+									projectHref={
+										selectedTask.projectId
+											? `/projects/${selectedTask.projectId}`
+											: undefined
+									}
 								/>
 
 								{materials && materials.length > 0 && (

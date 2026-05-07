@@ -347,7 +347,7 @@ const TemplateSelectModal = ({
 															</span>
 															<Badge
 																variant="secondary"
-																className="shrink-0 border border-sky-300/50 bg-sky-200/50 text-[10px] uppercase tracking-wide text-sky-950 dark:border-sky-700 dark:bg-sky-900/80 dark:text-sky-200"
+																className="shrink-0 border border-sky-300/50 bg-sky-200/50 text-[12px] uppercase tracking-wide text-sky-950 dark:border-sky-700 dark:bg-sky-900/80 dark:text-sky-200"
 															>
 																{
 																	template.category

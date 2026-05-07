@@ -6,6 +6,7 @@ import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { IProfile } from "@/lib/types";
 import { LogOutIcon, User } from "lucide-react";
 import { logout } from "./UserDropdown";
+import { InboxBell } from "./InboxBell";
 
 const SideBar = ({ profile }: { profile: IProfile | null }) => {
 	const ownerShell = useUsesOwnerShell(profile);
@@ -18,12 +19,13 @@ const SideBar = ({ profile }: { profile: IProfile | null }) => {
 
 	return (
 		<div className="flex ">
-			<aside className="fixed top-0 left-0 right-0 hidden lg:flex lg:flex-col w-60 z-40 bg-background h-screen border-r border-primary/10 justify-between">
+			<aside className="fixed top-0 left-0 right-0 hidden lg:flex lg:flex-col w-60 z-40 h-screen justify-between border-r border-nav-chrome-border bg-nav-chrome shadow-[4px_0_28px_-14px_hsl(var(--primary)_/_0.12)] dark:shadow-[4px_0_28px_-14px_hsl(0_0%_0%_/_0.45)]">
 				<div>
-					<div className="p-4 flex items-center space-x-3 border-b py-8">
-						<div className="flex gap-5 items-center font-semibold text-xl">
+					<div className="flex items-center justify-between gap-2 border-b border-nav-chrome-border px-4 py-8">
+						<div className="flex min-w-0 items-center gap-5 font-semibold text-xl">
 							<Link href={"/"}>BuildInc</Link>
 						</div>
+						<InboxBell profile={profile} />
 					</div>
 					<div className="mt-4">
 						<SideBarItems profile={profile} />
@@ -39,8 +41,8 @@ const SideBar = ({ profile }: { profile: IProfile | null }) => {
 					</div>
 				</div>
 
-				<div className="flex items-center gap-3 mb-4 text-sm border-t border-primary/20 pt-5">
-					<div className="bg-card/60 rounded-full w-10 h-10 flex items-center justify-center ml-2">
+				<div className="flex items-center gap-3 mb-4 border-t border-nav-chrome-border pt-5 text-sm">
+					<div className="ml-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 ring-1 ring-primary/25 dark:bg-primary/15 dark:ring-primary/20">
 						<User className=" w-5 h-5 text-muted-foreground" />
 					</div>
 					<div className="flex flex-col">

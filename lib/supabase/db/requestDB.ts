@@ -5,12 +5,12 @@ import { approvalStatus, IRequestDB } from "../../types";
 const supabase = createClient();
 
 export const requestDB = {
-	// Gets requests by user ID (where user is requestedBy or requestedTo)
+	/** Inbox + approvals: rows where the user is the approver or the requester */
 	async getRequestsByUserId(userId: string) {
 		const { data, error } = await supabase
 			.from("requests")
 			.select("*")
-			.eq("requestedTo", userId)
+			.or(`requestedTo.eq.${userId},requestedBy.eq.${userId}`)
 			.order("created_at", { ascending: false });
 
 		if (error) throw error;

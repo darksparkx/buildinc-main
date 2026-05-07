@@ -2,10 +2,8 @@
 
 import { Avatar, AvatarFallback } from "@/components/base/ui/avatar";
 import { Badge } from "@/components/base/ui/badge";
-import { requestStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
 import { cn, RupeeIcon } from "@/lib/functions/utils";
 import { IRequest, requestType } from "@/lib/types";
-import { Calendar, IndianRupee } from "lucide-react";
 import React from "react";
 
 function requestTypeLabel(type: requestType): string {
@@ -105,72 +103,70 @@ const ApprovalTable = ({
 	};
 
 	return (
-		<ul className="space-y-3">
+		<ul className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 lg:grid-cols-3">
 			{data.map((request) => {
 				const name =
 					request.requestedByProfile?.name?.trim() || "Unknown";
 				const initial = name.charAt(0).toUpperCase() || "?";
 
 				return (
-					<li key={request.id}>
+					<li key={request.id} className="flex min-h-0 min-w-0">
 						<button
 							type="button"
 							className={cn(
-								"w-full rounded-xl border p-4 text-left shadow-sm transition-colors",
+								"flex h-full min-h-0 w-full flex-col rounded-xl border p-5 text-left shadow-sm transition-colors",
 								"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 								surface,
 							)}
 							onClick={() => openDetailDialog(request)}
 						>
-							<div className="flex items-start justify-between gap-3">
-								<div className="min-w-0 flex-1">
-									<div className="flex flex-wrap items-center gap-2">
-										<Badge variant="outline" className="text-xs font-normal">
-											{requestTypeLabel(request.type)}
-										</Badge>
-										<Badge
-											variant={requestStatusBadgeVariant(request.status)}
-											className="capitalize"
-										>
-											{request.status}
-										</Badge>
-									</div>
-									<p className="mt-2 line-clamp-2 text-sm font-semibold leading-snug">
+							<div className="flex min-h-0 flex-1 flex-col gap-4">
+								<Badge variant="outline" className="w-fit font-normal text-[11px] uppercase tracking-wide">
+									{requestTypeLabel(request.type)}
+								</Badge>
+
+								<div className="min-w-0 space-y-1.5">
+									<p className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground">
 										{itemSummary(request)}
 									</p>
-									<p className="mt-0.5 truncate text-xs text-muted-foreground">
-										{request.project?.name ?? "—"}
+									<p className="truncate text-xs text-muted-foreground">
+										{request.project?.name?.trim() || "No project"}
 									</p>
 								</div>
-								<div className="flex max-w-[11rem] shrink-0 items-center gap-2">
-									<Avatar className="h-8 w-8 ring-1 ring-border/60">
-										<AvatarFallback className="text-xs">{initial}</AvatarFallback>
-									</Avatar>
-									<span className="truncate text-sm font-medium text-foreground">
-										{name}
-									</span>
-								</div>
-							</div>
 
-							<div className="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-								<div className="flex min-h-[1.25rem] items-center gap-2">
-									<IndianRupee
-										className="h-4 w-4 shrink-0 text-muted-foreground opacity-70"
-										aria-hidden
-									/>
-									<div className="text-muted-foreground">
-										<span className="sr-only">Amount: </span>
-										{amountLine(request)}
-									</div>
-								</div>
-								<div className="flex items-center gap-2 text-muted-foreground">
-									<Calendar className="h-4 w-4 shrink-0 opacity-70" aria-hidden />
-									<span>
-										Submitted{" "}
-										<span className="font-medium text-foreground">
-											{new Date(request.created_at).toLocaleDateString()}
+								<div className="mt-auto border-t border-border/50 pt-4">
+									<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+										Requested by
+									</p>
+									<div className="mt-2 flex items-center gap-2.5">
+										<Avatar className="h-9 w-9 ring-1 ring-border/50">
+											<AvatarFallback className="text-xs font-medium">{initial}</AvatarFallback>
+										</Avatar>
+										<span className="min-w-0 truncate text-sm font-medium text-foreground">
+											{name}
 										</span>
-									</span>
+									</div>
+
+									<dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+										<div className="min-w-0 space-y-0.5">
+											<dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+												Amount
+											</dt>
+											<dd className="flex items-center gap-1 tabular-nums text-foreground">
+												{amountLine(request)}
+											</dd>
+										</div>
+										<div className="min-w-0 space-y-0.5">
+											<dt className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+												Submitted
+											</dt>
+											<dd className="font-medium tabular-nums text-foreground">
+												{new Date(request.created_at).toLocaleDateString(undefined, {
+													dateStyle: "medium",
+												})}
+											</dd>
+										</div>
+									</dl>
 								</div>
 							</div>
 						</button>

@@ -15,7 +15,7 @@ export function Toaster() {
 					toast:
 						"group border shadow-md backdrop-blur-sm [&_[data-icon]]:shrink-0",
 					title: "font-semibold",
-					description: "text-[0.925rem] opacity-90",
+					description: "text-[1.05rem] opacity-90",
 					success:
 						"border-emerald-300/80 bg-emerald-50 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-50",
 					error:

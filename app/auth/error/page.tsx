@@ -28,7 +28,7 @@ export default async function Page({
 					<summary className="cursor-pointer font-medium text-white/90">
 						Details for support
 					</summary>
-					<p className="mt-2 break-all font-mono text-[0.7rem] leading-relaxed text-white/70">
+					<p className="mt-2 break-all font-mono text-[0.825rem] leading-relaxed text-white/70">
 						{raw}
 					</p>
 				</details>

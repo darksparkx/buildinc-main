@@ -88,7 +88,7 @@ function ProjectMobileRow({
 					<span className="truncate font-medium">{project.name}</span>
 				</div>
 				<div className="mt-2 flex flex-wrap items-center gap-2">
-					<Badge variant={statusVariant(project.status)} className="text-[10px]">
+					<Badge variant={statusVariant(project.status)} className="text-[12px]">
 						{project.status}
 					</Badge>
 					{orgName ? (

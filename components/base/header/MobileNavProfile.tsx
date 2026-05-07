@@ -42,10 +42,10 @@ const MobileNavProfile = ({ profile }: { profile: IProfile }) => {
 				>
 					<User
 						className={clsx(
-							"h-8 w-8 rounded-full p-2",
+							"h-8 w-8 rounded-full p-2 transition-colors",
 							accountOpen
-								? "bg-secondary text-secondary-foreground"
-								: "text-muted-foreground",
+								? "bg-secondary text-secondary-foreground shadow-sm ring-1 ring-secondary/40"
+								: "text-muted-foreground hover:bg-primary/15 hover:text-foreground dark:hover:bg-primary/20",
 						)}
 					/>
 				</button>

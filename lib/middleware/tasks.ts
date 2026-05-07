@@ -67,6 +67,8 @@ export async function deleteTask(id: string) {
 
 export async function updateTask(id: string, updates: Partial<ITask>) {
 	try {
+		const store = useTaskStore.getState();
+
 		// Convert partial ITask to partial ITaskDB
 		const updateData: Partial<ITaskDB> = {};
 
@@ -96,7 +98,6 @@ export async function updateTask(id: string, updates: Partial<ITask>) {
 
 		// Handle spent: if updating spent, add to existing spent if > 0
 		if (updates.spent !== undefined) {
-			const store = useTaskStore.getState();
 			const currentTask = store.getTask(id);
 			if (
 				currentTask &&
@@ -109,10 +110,14 @@ export async function updateTask(id: string, updates: Partial<ITask>) {
 			}
 		}
 
+		if (updates.paymentCompleted !== undefined)
+			updateData.paymentCompleted = updates.paymentCompleted;
+		if (updates.materialsCompleted !== undefined)
+			updateData.materialsCompleted = updates.materialsCompleted;
+
 		const result = await taskDB.updateTask(id, updateData);
 
 		// Update store
-		const store = useTaskStore.getState();
 		const updateDataWithAssignee = {
 			...updateData,
 			assigneeId: updateData.assignedTo || null,

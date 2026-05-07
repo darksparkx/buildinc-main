@@ -11,7 +11,6 @@ import {
 import { modalButtonCancelClass } from "@/lib/functions/modalButtonStyles";
 import { projectDetails } from "@/lib/functions/projectDetails";
 import { IProject, IProjectProfile, ITask } from "@/lib/types";
-import { ca } from "date-fns/locale";
 import { Dispatch, SetStateAction } from "react";
 import { toast } from "sonner";
 
@@ -19,11 +18,12 @@ type Props = {
 	isAssignTaskOpen: boolean;
 	setIsAssignTaskOpen: Dispatch<SetStateAction<boolean>>;
 	selectedTask: ITask | null;
-	setSelectedTask: Dispatch<SetStateAction<ITask | null>>;
+	setSelectedTask?: Dispatch<SetStateAction<ITask | null>>;
 	teamMembers: IProjectProfile[];
 	projectData: IProject;
 
-	updateprojectDetails: (project: IProject) => void;
+	/** Unused; kept for call-site compatibility. */
+	updateprojectDetails?: (project: IProject) => void;
 	currentUserId: string;
 };
 
@@ -50,7 +50,7 @@ const AssignTaskModal = ({
 				projectData
 			);
 			setIsAssignTaskOpen(false);
-			setSelectedTask(null);
+			setSelectedTask?.(null);
 			toast.success("Task Assignment Request Sent.");
 		} catch (error) {
 			toast.error("Failed to assign task. Please try again.");

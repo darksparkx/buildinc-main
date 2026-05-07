@@ -150,6 +150,25 @@ export interface ITaskDB {
 	materialsCompleted: boolean;
 }
 
+export interface ITaskCommentDB {
+	id: string;
+	created_at: Date;
+	taskId: string;
+	authorId: string;
+	body: string;
+	mentionUserIds: string[];
+}
+
+export interface ICommentMentionNotificationDB {
+	id: string;
+	created_at: Date;
+	recipientId: string;
+	actorId: string;
+	taskId: string;
+	commentId: string;
+	readAt: Date | null;
+}
+
 // 1.2 Secondary, part of another table
 export interface IMaterialDB {
 	// noChange

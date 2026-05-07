@@ -3,22 +3,10 @@
 import { SummaryCard } from "@/components/base/general/SummaryCard";
 import { ITask } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ClipboardList, Loader } from "lucide-react";
-import { useMemo, useState } from "react";
-import MaterialModal from "./modals/MaterialModal";
-import PaymentModal from "./modals/PaymentModal";
-import TaskDetailModal from "./TaskDetailModal";
+import { useMemo } from "react";
 import TaskTable from "./TaskTable";
-import CompleteModal from "./modals/CompleteModal";
 
 export default function Tasks({ tasks }: { tasks: ITask[] }) {
-	const [selectedTask, setSelectedTask] = useState<ITask | undefined>(
-		undefined,
-	);
-	const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-	const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-	const [isMaterialModalOpen, setIsMaterialModalOpen] = useState(false);
-	const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-
 	const inProgressTasks = useMemo(
 		() => tasks.filter((task) => task.status === "Active"),
 		[tasks],
@@ -98,8 +86,6 @@ export default function Tasks({ tasks }: { tasks: ITask[] }) {
 					desc="Tasks you’re actively working on"
 					taskList={inProgressTasks}
 					emptyMessage="No tasks in progress"
-					setSelectedTask={setSelectedTask}
-					setIsTaskDetailOpen={setIsTaskDetailOpen}
 				/>
 				<TaskTable
 					section="reviewing"
@@ -107,8 +93,6 @@ export default function Tasks({ tasks }: { tasks: ITask[] }) {
 					desc="Submitted for manager review"
 					taskList={awaitingApprovalTasks}
 					emptyMessage="Nothing awaiting approval"
-					setSelectedTask={setSelectedTask}
-					setIsTaskDetailOpen={setIsTaskDetailOpen}
 				/>
 				<TaskTable
 					section="completed"
@@ -116,32 +100,6 @@ export default function Tasks({ tasks }: { tasks: ITask[] }) {
 					desc="Approved and finished"
 					taskList={completedTasks}
 					emptyMessage="No completed tasks yet"
-					setSelectedTask={setSelectedTask}
-					setIsTaskDetailOpen={setIsTaskDetailOpen}
-				/>
-
-				<TaskDetailModal
-					isTaskDetailOpen={isTaskDetailOpen}
-					setIsTaskDetailOpen={setIsTaskDetailOpen}
-					selectedTask={selectedTask}
-					setIsPaymentModalOpen={setIsPaymentModalOpen}
-					setIsMaterialModalOpen={setIsMaterialModalOpen}
-					setIsCompleteModalOpen={setIsCompleteModalOpen}
-				/>
-				<PaymentModal
-					isPaymentModalOpen={isPaymentModalOpen}
-					setIsPaymentModalOpen={setIsPaymentModalOpen}
-					selectedTask={selectedTask}
-				/>
-				<MaterialModal
-					isMaterialModalOpen={isMaterialModalOpen}
-					setIsMaterialModalOpen={setIsMaterialModalOpen}
-					selectedTask={selectedTask}
-				/>
-				<CompleteModal
-					isCompleteModalOpen={isCompleteModalOpen}
-					setIsCompleteModalOpen={setIsCompleteModalOpen}
-					selectedTask={selectedTask}
 				/>
 			</div>
 		</div>

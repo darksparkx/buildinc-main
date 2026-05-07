@@ -68,8 +68,7 @@ async function runApprove(
 			await handlePaymentRequest(selectedApproval, profile);
 			return true;
 		case "TaskCompletion":
-			await handleCompletion(selectedApproval, profile);
-			return true;
+			return (await handleCompletion(selectedApproval, profile)) === true;
 		case "JoinOrganisation":
 		case "JoinProject": {
 			if (!profile || profile.id !== String(selectedApproval.requestedTo)) {

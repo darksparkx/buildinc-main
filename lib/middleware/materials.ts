@@ -46,10 +46,12 @@ export async function addMaterial(material: IMaterial) {
 
 export async function deleteMaterial(id: string) {
 	try {
+		const store = useMaterialStore.getState();
+		const existing = store.getMaterial(id);
+
 		await materialDB.removeMaterial(id);
 
 		// Remove from store
-		const store = useMaterialStore.getState();
 		store.deleteMaterial(id);
 
 		return { success: true, message: "Material deleted successfully" };
