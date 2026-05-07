@@ -2,6 +2,7 @@
 import { navItems } from "@/lib/constants/navitems";
 import { usePathname } from "next/navigation";
 import { useOrganisationDetailStore } from "@/lib/store/organisationDetailStore";
+import { usePhaseStore } from "@/lib/store/phaseStore";
 import { useTaskStore } from "@/lib/store/taskStore";
 import { useprojectDetailStore } from "@/lib/store/projectDetailStore";
 
@@ -9,9 +10,22 @@ export function CurrentPage() {
 	const pathname = usePathname();
 	const organisation = useOrganisationDetailStore((s) => s.organisation);
 	const project = useprojectDetailStore((s) => s.project);
-	const tasks = useTaskStore((s) => s.tasks);
 
 	const orgDetailMatch = pathname.match(/^\/organisations\/([^/]+)$/);
+	const taskDetailMatch = pathname.match(/^\/tasks\/([^/]+)$/);
+	const taskIdFromPath = taskDetailMatch?.[1];
+
+	const taskForHeader = useTaskStore((s) =>
+		taskIdFromPath ? s.tasks[taskIdFromPath] : undefined,
+	);
+	const phaseLabel = usePhaseStore((s) => {
+		const pid = taskForHeader?.phaseId;
+		if (!pid) return "";
+		return s.phases[pid]?.name?.trim() ?? "";
+	});
+
+	const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
+
 	if (orgDetailMatch) {
 		const title = organisation?.name?.trim() || "Organisation";
 		return (
@@ -29,15 +43,27 @@ export function CurrentPage() {
 		);
 	}
 
-	const taskDetailMatch = pathname.match(/^\/tasks\/([^/]+)$/);
 	if (taskDetailMatch?.[1]) {
-		const t = tasks[taskDetailMatch[1]];
+		const t = taskForHeader;
 		const title = t?.name?.trim() || "Task";
+		const projectLine = t?.projectName?.trim();
+		const trail = [projectLine, phaseLabel || undefined]
+			.filter(Boolean)
+			.join(" · ");
 		return (
 			<div className="min-w-0 max-w-[min(100%,18rem)] sm:max-w-md">
-				<p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground leading-none sm:text-xs">
-					Tasks
-				</p>
+				{trail ? (
+					<p
+						className="truncate text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
+						title={trail}
+					>
+						{trail}
+					</p>
+				) : (
+					<p className="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground leading-none sm:text-xs">
+						Tasks
+					</p>
+				)}
 				<h2
 					className="truncate text-base font-bold leading-tight md:text-lg"
 					title={title}
@@ -48,11 +74,7 @@ export function CurrentPage() {
 		);
 	}
 
-	const projectMatch = pathname.match(/^\/projects\/([^/]+)$/);
-	if (
-		projectMatch &&
-		projectMatch[1] !== "create-project"
-	) {
+	if (projectMatch && projectMatch[1] !== "create-project") {
 		const title = project?.name?.trim() || "Project";
 		return (
 			<div className="min-w-0 max-w-[min(100%,18rem)] sm:max-w-md">

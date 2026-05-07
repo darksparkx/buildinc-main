@@ -1,5 +1,6 @@
 import { PLAN_OFFERS } from "@/lib/billing/planOffers";
 import type { PublicTierId } from "@/lib/billing/tierLimits";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import type { SubscriptionPlan } from "@/lib/types";
 
 export function subscriptionPlanLabel(plan: SubscriptionPlan): string {
@@ -19,7 +20,5 @@ export function formatSubscriptionStatus(status: string | null | undefined): str
 
 export function formatSubscriptionDate(value: Date | null): string | null {
 	if (!value || !Number.isFinite(value.getTime())) return null;
-	return new Intl.DateTimeFormat(undefined, {
-		dateStyle: "medium",
-	}).format(value);
+	return formatCalendarDate(value);
 }

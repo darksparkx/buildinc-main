@@ -24,6 +24,7 @@ import {
 	modalButtonConfirmClass,
 	modalButtonDangerClass,
 } from "@/lib/functions/modalButtonStyles";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { requestStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
 import { RupeeIcon } from "@/lib/functions/utils";
 import { useProfileStore } from "@/lib/store/profileStore";
@@ -139,11 +140,7 @@ const ApprovalModal = ({
 						) : null}
 
 						<Row label="Date submitted">
-							{new Date(selectedApproval.created_at).toLocaleDateString("en-GB", {
-								day: "2-digit",
-								month: "2-digit",
-								year: "2-digit",
-							})}
+							{formatCalendarDate(selectedApproval.created_at)}
 						</Row>
 
 						{selectedApproval.type === "MaterialRequest" && (

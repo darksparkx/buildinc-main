@@ -2,16 +2,78 @@
 
 import { TabsTriggerList } from "@/components/base/general/TabsTriggerList";
 import { SummaryCard } from "@/components/base/general/SummaryCard";
+import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
+import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useRequestStore } from "@/lib/store/requestStore";
 import { IRequest } from "@/lib/types";
 import { ClipboardCheck, Clock, ShieldX, ThumbsUp } from "lucide-react";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Tabs } from "../base/ui/tabs";
 import ApprovalModal from "./ApprovalModal";
 import Approved from "./Approved";
 import Pending from "./Pending";
 import Rejected from "./Rejected";
+
+const APPROVAL_TABS = ["pending", "approved", "rejected"] as const;
+
+function ApprovalsTabbed({
+	pendingApprovals,
+	approvedApprovals,
+	rejectedApprovals,
+	setIsDetailDialogOpen,
+	setSelectedApproval,
+}: {
+	pendingApprovals: IRequest[];
+	approvedApprovals: IRequest[];
+	rejectedApprovals: IRequest[];
+	setIsDetailDialogOpen: (open: boolean) => void;
+	setSelectedApproval: (r: IRequest | null) => void;
+}) {
+	const [activeTab, setTab] = useUrlQueryTab(APPROVAL_TABS, "pending");
+
+	return (
+		<Tabs value={activeTab} onValueChange={setTab} className="w-full">
+			<TabsTriggerList
+				triggers={[
+					{
+						value: "pending",
+						label: "Pending",
+						count: pendingApprovals.length,
+					},
+					{
+						value: "approved",
+						label: "Approved",
+						count: approvedApprovals.length,
+					},
+					{
+						value: "rejected",
+						label: "Rejected",
+						count: rejectedApprovals.length,
+					},
+				]}
+			/>
+
+			<Pending
+				pendingApprovals={pendingApprovals}
+				setIsDetailDialogOpen={setIsDetailDialogOpen}
+				setSelectedApproval={setSelectedApproval}
+			/>
+
+			<Approved
+				approvedApprovals={approvedApprovals}
+				setIsDetailDialogOpen={setIsDetailDialogOpen}
+				setSelectedApproval={setSelectedApproval}
+			/>
+
+			<Rejected
+				rejectedApprovals={rejectedApprovals}
+				setIsDetailDialogOpen={setIsDetailDialogOpen}
+				setSelectedApproval={setSelectedApproval}
+			/>
+		</Tabs>
+	);
+}
 
 export default function Approvals({ admin: _admin }: { admin: boolean }) {
 	const { requests } = useRequestStore();
@@ -92,45 +154,15 @@ export default function Approvals({ admin: _admin }: { admin: boolean }) {
 					</div>
 				</header>
 
-				<Tabs defaultValue="pending" className="w-full">
-					<TabsTriggerList
-						triggers={[
-							{
-								value: "pending",
-								label: "Pending",
-								count: pendingApprovals.length,
-							},
-							{
-								value: "approved",
-								label: "Approved",
-								count: approvedApprovals.length,
-							},
-							{
-								value: "rejected",
-								label: "Rejected",
-								count: rejectedApprovals.length,
-							},
-						]}
-					/>
-
-					<Pending
+				<Suspense fallback={<LoadingSpinner />}>
+					<ApprovalsTabbed
 						pendingApprovals={pendingApprovals}
-						setIsDetailDialogOpen={setIsDetailDialogOpen}
-						setSelectedApproval={setSelectedApproval}
-					/>
-
-					<Approved
 						approvedApprovals={approvedApprovals}
-						setIsDetailDialogOpen={setIsDetailDialogOpen}
-						setSelectedApproval={setSelectedApproval}
-					/>
-
-					<Rejected
 						rejectedApprovals={rejectedApprovals}
 						setIsDetailDialogOpen={setIsDetailDialogOpen}
 						setSelectedApproval={setSelectedApproval}
 					/>
-				</Tabs>
+				</Suspense>
 
 				<ApprovalModal
 					isDetailDialogOpen={isDetailDialogOpen}

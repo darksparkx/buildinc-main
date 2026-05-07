@@ -11,6 +11,7 @@ import TopBar from "../header/TopBar";
 import LoadingSpinner from "./LoadingSpinner";
 import { StoreHydrator } from "./StoreHydrator";
 import { Toaster } from "@/components/base/ui/sonner";
+import { NavigationShortcutsTracker } from "@/components/dashboard/NavigationShortcutsTracker";
 import { SubscriptionRenewalBanner } from "@/components/billing/SubscriptionRenewalBanner";
 import { useNeedsSubscriptionRenewal } from "@/lib/hooks/useNeedsSubscriptionRenewal";
 
@@ -109,6 +110,7 @@ function AuthenticatedMain({
 				profile ? "mt-14 lg:mt-0" : "mt-14"
 			} h-screen p-4`}
 		>
+			{profile ? <NavigationShortcutsTracker /> : null}
 			{profile && needsRenewal ? <SubscriptionRenewalBanner /> : null}
 			{children}
 		</div>

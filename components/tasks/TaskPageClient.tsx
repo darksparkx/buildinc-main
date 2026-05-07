@@ -1,5 +1,6 @@
 "use client";
 
+import { PageBreadcrumbs } from "@/components/base/general/PageBreadcrumbs";
 import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import AssignTaskModal from "@/components/projectDetails/Modals/AssignTaskModal";
 import { Badge } from "@/components/base/ui/badge";
@@ -11,6 +12,7 @@ import {
 	TabsTrigger,
 } from "@/components/base/ui/tabs";
 import { taskStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { RupeeIcon, cn } from "@/lib/functions/utils";
 import { markMentionNotificationsReadForTask } from "@/lib/middleware/commentMentions";
 import {
@@ -21,6 +23,7 @@ import { getPhase } from "@/lib/middleware/phases";
 import { getProjectMembersByProjectId } from "@/lib/middleware/projectMembers";
 import { getProject } from "@/lib/middleware/projects";
 import { getTask } from "@/lib/middleware/tasks";
+import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useprojectDetailStore } from "@/lib/store/projectDetailStore";
 import { useTaskStore } from "@/lib/store/taskStore";
@@ -39,7 +42,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import CompleteModal from "./modals/CompleteModal";
 import MaterialModal from "./modals/MaterialModal";
 import PaymentModal from "./modals/PaymentModal";
@@ -54,6 +57,14 @@ const kicker =
 	"text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
 
 export default function TaskPageClient() {
+	return (
+		<Suspense fallback={<LoadingSpinner />}>
+			<TaskPageContent />
+		</Suspense>
+	);
+}
+
+function TaskPageContent() {
 	const params = useParams();
 	const router = useRouter();
 	const taskId = typeof params.taskId === "string" ? params.taskId : "";
@@ -86,7 +97,7 @@ export default function TaskPageClient() {
 			try {
 				const t = await getTask(taskId);
 				if (cancelled) return;
-				const [phase, proj, mem] = await Promise.all([
+				const [phase, proj, mem, _loadedMaterials] = await Promise.all([
 					getPhase(t.phaseId),
 					getProject(t.projectId),
 					getProjectMembersByProjectId(t.projectId),
@@ -119,7 +130,34 @@ export default function TaskPageClient() {
 		[taskId, ready],
 	);
 
+	const [urlOverviewTab, setOverviewTab] = useUrlQueryTab(
+		["details", "materials"] as const,
+		"details",
+	);
+	const overviewTab =
+		urlOverviewTab === "materials" && materials.length === 0
+			? "details"
+			: urlOverviewTab;
+
 	const selectedTask: ITask | undefined = task;
+
+	const crumbItems = useMemo(() => {
+		if (!selectedTask || !project) {
+			return [] as { label: string; href?: string }[];
+		}
+		const href = `/projects/${selectedTask.projectId}`;
+		const projLabel =
+			project.name?.trim() ||
+			selectedTask.projectName?.trim() ||
+			"Project";
+		const list: { label: string; href?: string }[] = [
+			{ label: "Projects", href: "/projects" },
+			{ label: projLabel, href: href },
+		];
+		if (phaseName) list.push({ label: phaseName });
+		list.push({ label: selectedTask.name });
+		return list;
+	}, [selectedTask, project, phaseName]);
 
 	if (!profile?.id) {
 		return <LoadingSpinner />;
@@ -147,18 +185,10 @@ export default function TaskPageClient() {
 
 	const projectHref = `/projects/${selectedTask.projectId}`;
 	const startLabel = selectedTask.startDate
-		? new Date(selectedTask.startDate).toLocaleDateString(undefined, {
-				month: "short",
-				day: "numeric",
-				year: "numeric",
-			})
+		? formatCalendarDate(selectedTask.startDate)
 		: null;
 	const dueLabel = selectedTask.endDate
-		? new Date(selectedTask.endDate).toLocaleDateString(undefined, {
-				month: "short",
-				day: "numeric",
-				year: "numeric",
-			})
+		? formatCalendarDate(selectedTask.endDate)
 		: null;
 
 	const tabListClass =
@@ -182,17 +212,23 @@ export default function TaskPageClient() {
 			/>
 
 			<div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-20 pt-5 sm:px-6 sm:pb-24 sm:pt-7 lg:px-10">
-				<button
-					type="button"
-					onClick={() => router.push("/tasks")}
-					className="group mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:border-border hover:text-foreground"
-				>
-					<ArrowLeft
-						className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
-						aria-hidden
+				<div className="mb-4 space-y-3 sm:mb-6">
+					<button
+						type="button"
+						onClick={() => router.push("/tasks")}
+						className="group inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1.5 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:border-border hover:text-foreground"
+					>
+						<ArrowLeft
+							className="h-4 w-4 transition-transform group-hover:-translate-x-0.5"
+							aria-hidden
+						/>
+						Tasks
+					</button>
+					<PageBreadcrumbs
+						items={crumbItems}
+						listClassName="!text-xs sm:!text-sm"
 					/>
-					Tasks
-				</button>
+				</div>
 
 				<header
 					className={cn(
@@ -285,59 +321,69 @@ export default function TaskPageClient() {
 					</div>
 				</header>
 
-				<div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_18.5rem] xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-12">
-					<div className="min-w-0 space-y-10">
-						<section className={cn(panel, "overflow-hidden")}>
-							<Tabs defaultValue="details" className="w-full gap-0">
-								<div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-6 dark:bg-muted/10">
-									<TabsList className={tabListClass}>
-										<TabsTrigger value="details" className={tabTriggerClass}>
-											Overview
+				<div
+					className={cn(
+						"grid gap-10 xl:gap-12",
+						"[grid-template-areas:'task-overview'_'task-sidebar'_'task-comments']",
+						"lg:grid-cols-[minmax(0,1fr)_18.5rem] xl:grid-cols-[minmax(0,1fr)_20rem]",
+						"lg:[grid-template-areas:'task-overview_task-sidebar'_'task-comments_task-sidebar']",
+					)}
+				>
+					<section
+						className={cn(panel, "min-w-0 overflow-hidden [grid-area:task-overview]")}
+					>
+						<Tabs
+							value={overviewTab}
+							onValueChange={setOverviewTab}
+							className="w-full gap-0"
+						>
+							<div className="border-b border-border/60 bg-muted/20 px-4 py-3 sm:px-6 dark:bg-muted/10">
+								<TabsList className={tabListClass}>
+									<TabsTrigger value="details" className={tabTriggerClass}>
+										Overview
+									</TabsTrigger>
+									{materials.length > 0 ? (
+										<TabsTrigger value="materials" className={tabTriggerClass}>
+											Materials
+											<Badge
+												variant="secondary"
+												className="ml-1 rounded-md px-1.5 py-px text-[10px] font-semibold tabular-nums opacity-90"
+											>
+												{materials.length}
+											</Badge>
 										</TabsTrigger>
-										{materials.length > 0 ? (
-											<TabsTrigger value="materials" className={tabTriggerClass}>
-												Materials
-												<Badge
-													variant="secondary"
-													className="ml-1 rounded-md px-1.5 py-px text-[10px] font-semibold tabular-nums opacity-90"
-												>
-													{materials.length}
-												</Badge>
-											</TabsTrigger>
-										) : null}
-									</TabsList>
-								</div>
-								<div className="px-5 py-8 sm:px-8 sm:py-10">
-									<TabsContent value="details" className="m-0 outline-none">
-										<TaskDetails
-											selectedTask={selectedTask}
-											projectName={displayProjectName}
-											projectHref={projectHref}
-											phaseName={phaseName || undefined}
+									) : null}
+								</TabsList>
+							</div>
+							<div className="px-5 py-8 sm:px-8 sm:py-10">
+								<TabsContent value="details" className="m-0 outline-none">
+									<TaskDetails
+										selectedTask={selectedTask}
+										projectName={displayProjectName}
+										projectHref={projectHref}
+										phaseName={phaseName || undefined}
+										presentation="page"
+										omitProjectContext
+									/>
+								</TabsContent>
+								{materials.length > 0 ? (
+									<TabsContent value="materials" className="m-0 outline-none">
+										<TaskMaterials
+											materials={materials}
 											presentation="page"
-											omitProjectContext
 										/>
 									</TabsContent>
-									{materials.length > 0 ? (
-										<TabsContent value="materials" className="m-0 outline-none">
-											<TaskMaterials
-												materials={materials}
-												presentation="page"
-											/>
-										</TabsContent>
-									) : null}
-								</div>
-							</Tabs>
-						</section>
+								) : null}
+							</div>
+						</Tabs>
+					</section>
 
-						<TaskCommentsSection
-							taskId={selectedTask.id}
-							authorId={profile.id}
-							projectMembers={members}
-						/>
-					</div>
-
-					<aside className="min-w-0 space-y-5 lg:sticky lg:top-20 lg:self-start">
+					<aside
+						className={cn(
+							"min-w-0 space-y-5 [grid-area:task-sidebar]",
+							"lg:sticky lg:top-20 lg:self-start",
+						)}
+					>
 						<div className={cn(panel, "p-5 sm:p-6")}>
 							<ul className="space-y-3">
 								<li className="flex items-center justify-between gap-3 rounded-xl bg-muted/35 px-3 py-2.5 dark:bg-muted/20">
@@ -353,7 +399,7 @@ export default function TaskPageClient() {
 								</li>
 								<li className="flex items-center justify-between gap-3 rounded-xl bg-muted/35 px-3 py-2.5 dark:bg-muted/20">
 									<span className="text-xs font-medium text-muted-foreground">
-										Planned
+										Planned budget
 									</span>
 									<span className="text-sm font-semibold tabular-nums">
 										{planned} <RupeeIcon />
@@ -361,7 +407,7 @@ export default function TaskPageClient() {
 								</li>
 								<li className="flex items-center justify-between gap-3 rounded-xl bg-muted/35 px-3 py-2.5 dark:bg-muted/20">
 									<span className="text-xs font-medium text-muted-foreground">
-										Recorded
+										Spent
 									</span>
 									<span className="text-sm font-semibold tabular-nums">
 										{spent} <RupeeIcon />
@@ -445,6 +491,14 @@ export default function TaskPageClient() {
 							</div>
 						) : null}
 					</aside>
+
+					<div className="min-w-0 [grid-area:task-comments]">
+						<TaskCommentsSection
+							taskId={selectedTask.id}
+							authorId={profile.id}
+							projectMembers={members}
+						/>
+					</div>
 				</div>
 			</div>
 

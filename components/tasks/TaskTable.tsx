@@ -7,6 +7,7 @@ import {
 	CardTitle,
 } from "@/components/base/ui/card";
 import { cn } from "@/lib/functions/utils";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { taskStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
 import { getProjectNameFromPhaseId } from "@/lib/functions/tasks";
 import { getTaskMaterialsFromStore } from "@/lib/middleware/materials";
@@ -157,7 +158,7 @@ const TaskCard = ({
 						Due{" "}
 						<span className="font-medium text-foreground">
 							{task.endDate
-								? new Date(task.endDate).toLocaleDateString()
+								? formatCalendarDate(task.endDate)
 								: "—"}
 						</span>
 					</span>

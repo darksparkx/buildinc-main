@@ -2,7 +2,6 @@ import { Button } from "@/components/base/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "@/components/base/ui/card";
@@ -44,15 +43,12 @@ const accentRing: Record<
 
 const DashboardQuickActions = () => {
 	return (
-		<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
+		<Card className="flex h-full flex-col border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
 			<CardHeader className="space-y-1 pb-4 sm:pb-6">
 				<CardTitle className="text-lg sm:text-xl">Quick actions</CardTitle>
-				<CardDescription>
-					Common tasks you can perform from here.
-				</CardDescription>
 			</CardHeader>
-			<CardContent className="pb-6">
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+			<CardContent className="flex flex-1 flex-col pb-6">
+				<div className="grid grid-cols-2 gap-3">
 					{actionItems.map(({ label, icon: Icon, accent }) => (
 						<Button
 							key={label}

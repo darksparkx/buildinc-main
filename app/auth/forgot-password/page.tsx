@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { ForgotPasswordForm } from "./forgotPasswordForm";
+
+export const metadata: Metadata = {
+	title: "Reset password",
+	description: "Request a password reset link for your BuildInc account.",
+};
 
 export default function Page() {
 	return (

@@ -9,10 +9,10 @@ import {
 	ChevronRight,
 } from "lucide-react";
 import { phaseCreationFunctions } from "@/lib/functions/projectCreation";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { Button } from "@/components/base/ui/button";
 import { Textarea } from "@/components/base/ui/textarea";
 import { useState, useEffect } from "react";
-import { format } from "date-fns";
 import { Input } from "@/components/base/ui/input";
 import { Label } from "@/components/base/ui/label";
 import { Calendar } from "@/components/base/ui/calendar";
@@ -309,10 +309,7 @@ const PhaseTable = ({
 											>
 												<CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
 												{phase.startDate
-													? format(
-															phase.startDate,
-															"PPP"
-													  )
+													? formatCalendarDate(phase.startDate)
 													: "Pick a date"}
 											</Button>
 										</DialogTrigger>
@@ -358,10 +355,7 @@ const PhaseTable = ({
 											>
 												<CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
 												{phase.endDate
-													? format(
-															phase.endDate,
-															"PPP"
-													  )
+													? formatCalendarDate(phase.endDate)
 													: "Pick a date"}
 											</Button>
 										</DialogTrigger>

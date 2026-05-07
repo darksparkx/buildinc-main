@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { Box, Building, Building2, Users2 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { formatCalendarDate } from "./formatCalendarDate";
 
 export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
@@ -40,9 +41,11 @@ export const getEstimatedDuration = (
 	return 0;
 };
 
+export { formatCalendarDate };
+
 // Date utilities
 export function formatDate(date: string | Date): string {
-	return new Date(date).toLocaleDateString();
+	return formatCalendarDate(date);
 }
 
 export function formatTime(timestamp: string | Date): string {
@@ -63,7 +66,7 @@ export function formatDateTime(timestamp: string | Date): string {
 	} else if (date.toDateString() === yesterday.toDateString()) {
 		return "Yesterday";
 	} else {
-		return date.toLocaleDateString();
+		return formatCalendarDate(date);
 	}
 }
 
@@ -109,7 +112,6 @@ export function formatPercentage(percentage: number): string {
 
 import React from "react";
 import { status } from "../types";
-import { ca } from "date-fns/locale";
 import { useOrganisationStore } from "../store/organisationStore";
 import { useProjectStore } from "../store/projectStore";
 import { useOrganisationMemberStore } from "../store/organisationMemberStore";

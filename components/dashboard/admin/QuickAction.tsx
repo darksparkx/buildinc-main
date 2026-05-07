@@ -4,7 +4,6 @@ import React from "react";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "@/components/base/ui/card";
@@ -12,14 +11,11 @@ import Link from "next/link";
 
 const QuickAction = () => {
 	return (
-		<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
+		<Card className="flex h-full flex-col border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
 			<CardHeader className="space-y-1 pb-4 sm:pb-6">
 				<CardTitle className="text-lg sm:text-xl">Quick actions</CardTitle>
-				<CardDescription>
-					Jump straight into common workflows.
-				</CardDescription>
 			</CardHeader>
-			<CardContent className="pb-6">
+			<CardContent className="flex flex-1 flex-col pb-6">
 				<div className="grid grid-cols-1 gap-3 sm:max-w-lg">
 					<Button
 						asChild

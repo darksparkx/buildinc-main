@@ -1,13 +1,11 @@
+import { formatFriendlyDate } from "@/lib/functions/formatCalendarDate";
+import DashboardShortcuts from "../DashboardShortcuts";
 import ActiveProjects from "./ActiveProjects";
 import QuickAction from "./QuickAction";
 import Summary from "./Summary";
 
 export default function A_Dashboard() {
-	const today = new Date().toLocaleDateString(undefined, {
-		weekday: "long",
-		month: "short",
-		day: "numeric",
-	});
+	const today = formatFriendlyDate(new Date());
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
@@ -23,7 +21,7 @@ export default function A_Dashboard() {
 							</p>
 						</div>
 						<p
-							className="text-sm text-muted-foreground tabular-nums"
+							className="text-sm text-muted-foreground"
 							suppressHydrationWarning
 						>
 							{today}
@@ -32,7 +30,10 @@ export default function A_Dashboard() {
 				</header>
 
 				<Summary />
-				<QuickAction />
+				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
+					<QuickAction />
+					<DashboardShortcuts />
+				</div>
 				<ActiveProjects />
 			</div>
 		</div>

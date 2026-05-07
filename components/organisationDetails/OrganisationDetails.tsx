@@ -1,9 +1,10 @@
 "use client";
-import { Building2, ChevronRight, FolderOpen, Users } from "lucide-react";
+import { Building2, FolderOpen, Users } from "lucide-react";
 import { Tabs, TabsContent } from "@/components/base/ui/tabs";
 import { useOrganisationDetailStore } from "@/lib/store/organisationDetailStore";
-import { IOrganisation } from "@/lib/types";
-import Link from "next/link";
+import type { IOrganisation, IProject } from "@/lib/types";
+import { PageBreadcrumbs } from "@/components/base/general/PageBreadcrumbs";
+import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import {
 	Card,
 	CardHeader,
@@ -19,7 +20,88 @@ import { TabsTriggerList } from "@/components/base/general/TabsTriggerList";
 import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import { getOrganisationProjectsFromStore } from "@/lib/middleware/projects";
 import ChangeRoleModal from "./ChangeRoleModal";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
+
+const ORG_WORKSPACE_TABS = [
+	"overview",
+	"projects",
+	"members",
+	"settings",
+] as const;
+
+function OrganisationWorkspace({
+	organisation,
+	projects,
+	totalBudget,
+	totalSpent,
+	budgetUtilization,
+	setChangeRole,
+	setChangeRoleUser,
+	setChangeRoleModal,
+	setChangeRoleId,
+}: {
+	organisation: IOrganisation;
+	projects: IProject[];
+	totalBudget: number;
+	totalSpent: number;
+	budgetUtilization: number;
+	setChangeRole: (v: string) => void;
+	setChangeRoleUser: (v: string) => void;
+	setChangeRoleModal: (v: boolean) => void;
+	setChangeRoleId: (v: string) => void;
+}) {
+	const [activeTab, setTab] = useUrlQueryTab(ORG_WORKSPACE_TABS, "overview");
+
+	return (
+		<Tabs value={activeTab} onValueChange={setTab} className="w-full">
+			<TabsTriggerList
+				triggers={[
+					{ value: "overview", label: "Overview" },
+					{ value: "projects", label: "Projects" },
+					{ value: "members", label: "Members" },
+					{ value: "settings", label: "Settings" },
+				]}
+				className="overflow-x-auto sm:overflow-visible"
+			/>
+
+			<OrgOverview
+				organisation={organisation}
+				totalBudget={totalBudget}
+				totalSpent={totalSpent}
+				budgetUtilization={budgetUtilization}
+			/>
+
+			<TabsContent value="projects" className="mt-0 space-y-4">
+				<div>
+					<h3 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
+						Organisation projects
+					</h3>
+					<ProjectTable
+						filteredProjects={projects}
+						admin={true}
+						projectTotalCount={projects.length}
+						hasActiveFilters={false}
+					/>
+				</div>
+			</TabsContent>
+
+			<TabsContent value="members" className="mt-0 space-y-4">
+				<OrgMembers
+					organisation={organisation}
+					setChangeRole={setChangeRole}
+					setChangeRoleUser={setChangeRoleUser}
+					setChangeRoleModal={setChangeRoleModal}
+					setChangeRoleId={setChangeRoleId}
+				/>
+			</TabsContent>
+
+			<TabsContent value="settings" className="mt-0 space-y-4">
+				<OrgSettings organisation={organisation} />
+			</TabsContent>
+		</Tabs>
+	);
+}
 
 export default function OrganisationDetails() {
 	const [changeRoleModal, setChangeRoleModal] = useState(false);
@@ -49,52 +131,19 @@ export default function OrganisationDetails() {
 				<Header organisation={organisation} />
 				<Summary organisation={organisation} />
 
-				<Tabs defaultValue="overview" className="w-full">
-					<TabsTriggerList
-						triggers={[
-							{ value: "overview", label: "Overview" },
-							{ value: "projects", label: "Projects" },
-							{ value: "members", label: "Members" },
-							{ value: "settings", label: "Settings" },
-						]}
-						className="overflow-x-auto sm:overflow-visible"
-					/>
-
-					<OrgOverview
+				<Suspense fallback={<LoadingSpinner />}>
+					<OrganisationWorkspace
 						organisation={organisation}
+						projects={projects}
 						totalBudget={totalBudget}
 						totalSpent={totalSpent}
 						budgetUtilization={budgetUtilization}
+						setChangeRole={setChangeRole}
+						setChangeRoleUser={setChangeRoleUser}
+						setChangeRoleModal={setChangeRoleModal}
+						setChangeRoleId={setChangeRoleId}
 					/>
-
-					<TabsContent value="projects" className="mt-0 space-y-4">
-						<div>
-							<h3 className="mb-4 text-lg font-semibold tracking-tight sm:text-xl">
-								Organisation projects
-							</h3>
-							<ProjectTable
-								filteredProjects={projects}
-								admin={true}
-								projectTotalCount={projects.length}
-								hasActiveFilters={false}
-							/>
-						</div>
-					</TabsContent>
-
-					<TabsContent value="members" className="mt-0 space-y-4">
-						<OrgMembers
-							organisation={organisation}
-							setChangeRole={setChangeRole}
-							setChangeRoleUser={setChangeRoleUser}
-							setChangeRoleModal={setChangeRoleModal}
-							setChangeRoleId={setChangeRoleId}
-						/>
-					</TabsContent>
-
-					<TabsContent value="settings" className="mt-0 space-y-4">
-						<OrgSettings organisation={organisation} />
-					</TabsContent>
-				</Tabs>
+				</Suspense>
 
 				<ChangeRoleModal
 					isOpen={changeRoleModal}
@@ -113,27 +162,13 @@ const Header = ({ organisation }: { organisation: IOrganisation }) => {
 	return (
 		<header className="mb-3 space-y-5 lg:mb-8">
 			{/* Desktop: breadcrumb (mobile uses bottom nav → Organisations) */}
-			<nav
-				className="hidden flex-wrap items-center gap-1.5 text-sm lg:flex"
-				aria-label="Breadcrumb"
-			>
-				<Link
-					href="/organisations"
-					className="text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Organisations
-				</Link>
-				<ChevronRight
-					className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50"
-					aria-hidden
-				/>
-				<span
-					className="min-w-0 truncate font-medium text-foreground"
-					title={organisation.name}
-				>
-					{organisation.name}
-				</span>
-			</nav>
+			<PageBreadcrumbs
+				className="hidden lg:block"
+				items={[
+					{ label: "Organisations", href: "/organisations" },
+					{ label: organisation.name },
+				]}
+			/>
 
 			{/* Icon + title + tagline: lg+ only (top bar shows name below lg) */}
 			<div className="hidden min-w-0 items-start gap-3 lg:flex">

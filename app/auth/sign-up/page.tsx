@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { SignUpForm } from "./signUpForm";
+
+export const metadata: Metadata = {
+	title: "Sign up",
+	description: "Create your BuildInc account.",
+};
 
 export default function Page() {
 	return (

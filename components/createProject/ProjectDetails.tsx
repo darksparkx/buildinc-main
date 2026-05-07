@@ -1,5 +1,4 @@
 import React from "react";
-import { format } from "date-fns";
 import {
 	Calendar as CalendarIcon,
 	Clock,
@@ -26,6 +25,7 @@ import {
 	DialogTitle,
 } from "@/components/base/ui/dialog";
 import { cn, getEstimatedDuration } from "@/lib/functions/utils";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import {
 	IOrganisation,
 	IOrganisationProfile,
@@ -243,7 +243,7 @@ const ProjectDetails: React.FC<projectDetailsProps> = ({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
 									{projectData.startDate
-										? format(projectData.startDate, "PPP")
+										? formatCalendarDate(projectData.startDate)
 										: "Pick a date"}
 								</Button>
 							</DialogTrigger>
@@ -288,7 +288,7 @@ const ProjectDetails: React.FC<projectDetailsProps> = ({
 								>
 									<CalendarIcon className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
 									{projectData.endDate
-										? format(projectData.endDate, "PPP")
+										? formatCalendarDate(projectData.endDate)
 										: "Pick a date"}
 								</Button>
 							</DialogTrigger>

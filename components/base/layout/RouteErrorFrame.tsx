@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Button } from "@/components/base/ui/button";
@@ -16,6 +17,8 @@ export function RouteErrorFrame({
 	description,
 	primaryHref = "/",
 	primaryLabel = "Go to home",
+	/** When true, replaces the primary link with a disabled loading control (e.g. while resolving auth). */
+	primaryPending = false,
 	onRetry,
 	retryLabel = "Try again",
 	children,
@@ -26,6 +29,7 @@ export function RouteErrorFrame({
 	description?: ReactNode;
 	primaryHref?: string;
 	primaryLabel?: string;
+	primaryPending?: boolean;
 	onRetry?: () => void;
 	retryLabel?: string;
 	children?: ReactNode;
@@ -66,12 +70,26 @@ export function RouteErrorFrame({
 									{retryLabel}
 								</Button>
 							) : null}
-							<Button
-								asChild
-								className="bg-white/90 text-secondary hover:bg-white sm:order-2"
-							>
-								<Link href={primaryHref}>{primaryLabel}</Link>
-							</Button>
+							{primaryPending ? (
+								<Button
+									type="button"
+									disabled
+									className="cursor-wait bg-white/90 text-secondary hover:bg-white/90 sm:order-2"
+								>
+									<Loader2
+										className="mr-2 h-4 w-4 shrink-0 animate-spin"
+										aria-hidden
+									/>
+									One moment…
+								</Button>
+							) : (
+								<Button
+									asChild
+									className="bg-white/90 text-secondary hover:bg-white sm:order-2"
+								>
+									<Link href={primaryHref}>{primaryLabel}</Link>
+								</Button>
+							)}
 						</div>
 					</CardContent>
 				</Card>

@@ -14,7 +14,9 @@ import { IMaterial, ITask } from "@/lib/types";
 import { modalButtonConfirmClass } from "@/lib/functions/modalButtonStyles";
 import { completeTask, projectDetails } from "@/lib/functions/projectDetails";
 import { getStatusColor } from "@/lib/functions/utils";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { Package } from "lucide-react";
+import Link from "next/link";
 import React, { Dispatch, SetStateAction } from "react";
 import {
 	getMaterialsById,
@@ -92,14 +94,16 @@ TaskDetailModalProps) => {
 										Due Date
 									</Label>
 									<p className="text-sm">
-										{new Date(
-											Date.now() +
-												selectedTask.estimatedDuration *
-													24 *
-													60 *
-													60 *
-													1000
-										).toLocaleDateString()}
+										{formatCalendarDate(
+											new Date(
+												Date.now() +
+													selectedTask.estimatedDuration *
+														24 *
+														60 *
+														60 *
+														1000,
+											),
+										)}
 									</p>
 								</div>
 							)}
@@ -226,6 +230,18 @@ TaskDetailModalProps) => {
 					</div>
 				)}
 				<DialogFooter className="gap-2 border-t border-border/60 pt-4 sm:gap-2">
+					{selectedTask &&
+						selectedTask.status !== "Inactive" &&
+						selectedTask.status !== "Pending" && (
+							<Button
+								type="button"
+								variant="secondary"
+								className="w-full sm:mr-auto sm:w-auto"
+								asChild
+							>
+								<Link href={`/tasks/${selectedTask.id}`}>Go to task</Link>
+							</Button>
+						)}
 					{/* {selectedTask?.status === "Reviewing" && (
 						<div className="flex gap-2">
 							<Button

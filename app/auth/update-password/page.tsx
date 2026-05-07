@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { UpdatePasswordForm } from "./updatePasswordForm";
+
+export const metadata: Metadata = {
+	title: "New password",
+	description: "Set a new password for your BuildInc account.",
+};
 
 export default function Page() {
 	return (

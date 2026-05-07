@@ -4,6 +4,7 @@ import { Label } from "@/components/base/ui/label";
 import { Separator } from "@/components/base/ui/separator";
 import { TabsContent } from "@/components/base/ui/tabs";
 import { taskStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { cn, RupeeIcon } from "@/lib/functions/utils";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
 import { ITask } from "@/lib/types";
@@ -117,7 +118,7 @@ const detailInnerSheet = (
 					<Label className={labelClass}>Start date</Label>
 					<p className={v}>
 						{selectedTask.startDate
-							? new Date(selectedTask.startDate).toLocaleDateString()
+							? formatCalendarDate(selectedTask.startDate)
 							: "—"}
 					</p>
 				</div>
@@ -126,7 +127,7 @@ const detailInnerSheet = (
 					<Label className={labelClass}>Due date</Label>
 					<p className={v}>
 						{selectedTask.endDate
-							? new Date(selectedTask.endDate).toLocaleDateString()
+							? formatCalendarDate(selectedTask.endDate)
 							: "—"}
 					</p>
 				</div>
@@ -139,7 +140,7 @@ const detailInnerSheet = (
 				</div>
 
 				<div className="space-y-1.5 sm:col-span-2">
-					<Label className={labelClass}>Payment recorded</Label>
+					<Label className={labelClass}>Spent</Label>
 					<p className={v}>
 						{(selectedTask.spent ?? 0).toFixed(2)} <RupeeIcon />
 					</p>
@@ -170,7 +171,7 @@ const detailInnerSheet = (
 					<p className="text-sm">
 						{approvedLabel}
 						{selectedTask.completedDate
-							? ` · ${new Date(selectedTask.completedDate).toLocaleDateString()}`
+							? ` · ${formatCalendarDate(selectedTask.completedDate)}`
 							: ""}
 					</p>
 				</div>
@@ -301,7 +302,7 @@ const detailInnerPage = (
 									<p className="text-sm text-foreground">
 										{approvedLabel}
 										{selectedTask.completedDate
-											? ` · ${new Date(selectedTask.completedDate).toLocaleDateString(undefined, { dateStyle: "medium" })}`
+											? ` · ${formatCalendarDate(selectedTask.completedDate)}`
 											: ""}
 									</p>
 								</div>

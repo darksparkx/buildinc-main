@@ -1,5 +1,6 @@
 "use client";
 
+import { PageBreadcrumbs } from "@/components/base/general/PageBreadcrumbs";
 import { TabsTriggerList } from "@/components/base/general/TabsTriggerList";
 import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import { Badge } from "@/components/base/ui/badge";
@@ -22,15 +23,14 @@ import {
 	IProjectProfile,
 	ITask,
 } from "@/lib/types";
+import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
+import { FolderOpen, IndianRupee, Percent, Users } from "lucide-react";
 import {
-	ChevronRight,
-	FolderOpen,
-	IndianRupee,
-	Percent,
-	Users,
-} from "lucide-react";
-import Link from "next/link";
-import { useState } from "react";
+	Suspense,
+	useState,
+	type Dispatch,
+	type SetStateAction,
+} from "react";
 import { Members } from "./Members";
 import AssignTaskModal from "./Modals/AssignTaskModal";
 import ChangeRoleModal from "./Modals/ChangeUserModal";
@@ -62,14 +62,93 @@ function statusVariant(
 	return "secondary";
 }
 
+const PROJECT_WORKSPACE_TABS = [
+	"kanban",
+	"overview",
+	"team",
+	"settings",
+] as const;
+
+function ProjectWorkspace({
+	projectData,
+	organisation,
+	teamMembers,
+	organisationMembers,
+	setChangeRole,
+	setChangeRoleModal,
+	setChangeRoleUser,
+	setChangeRoleId,
+	setIsTaskDetailOpen,
+	setSelectedTask,
+}: {
+	projectData: IProject;
+	organisation: IOrganisation | undefined;
+	teamMembers: IProjectProfile[] | undefined;
+	organisationMembers: ReturnType<typeof getOrganisationMembersFromStore>;
+	setChangeRole: Dispatch<SetStateAction<string>>;
+	setChangeRoleModal: Dispatch<SetStateAction<boolean>>;
+	setChangeRoleUser: Dispatch<SetStateAction<string>>;
+	setChangeRoleId: Dispatch<SetStateAction<string>>;
+	setIsTaskDetailOpen: Dispatch<SetStateAction<boolean>>;
+	setSelectedTask: Dispatch<SetStateAction<ITask | null>>;
+}) {
+	const [activeTab, setTab] = useUrlQueryTab(
+		PROJECT_WORKSPACE_TABS,
+		"kanban",
+	);
+
+	return (
+		<Tabs value={activeTab} onValueChange={setTab} className="w-full">
+			<TabsTriggerList
+				triggers={[
+					{ value: "kanban", label: "Task Board" },
+					{ value: "overview", label: "Overview" },
+					{ value: "team", label: "Members" },
+					{ value: "settings", label: "Settings" },
+				]}
+				className="overflow-x-auto sm:overflow-visible"
+			/>
+			<PhaseBoard
+				projectId={projectData.id}
+				setIsTaskDetailOpen={setIsTaskDetailOpen}
+				setSelectedTask={setSelectedTask}
+			/>
+
+			<Overview
+				projectData={projectData}
+				organisationName={organisation?.name}
+			/>
+			<Members
+				members={teamMembers ?? []}
+				organisationMembers={organisationMembers}
+				teamMembers={teamMembers ?? []}
+				projectId={projectData.id}
+				projectName={projectData.name}
+				setChangeRole={setChangeRole}
+				setChangeRoleModal={setChangeRoleModal}
+				setChangeRoleUser={setChangeRoleUser}
+				setChangeRoleId={setChangeRoleId}
+			/>
+			<ProjectSettings
+				project={projectData}
+				organisation={organisation}
+			/>
+		</Tabs>
+	);
+}
+
 export default function ProjectDetails() {
 	const [changeRoleModal, setChangeRoleModal] = useState(false);
 	const [changeRoleUser, setChangeRoleUser] = useState<string>("");
 	const [changeRole, setChangeRole] = useState<string>("");
 	const [changeRoleId, setChangeRoleId] = useState<string>("");
+	const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+	const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
+	const [selectedTask, setSelectedTask] = useState<ITask | null>(null);
 
 	const { updateprojectDetails } = useprojectDetailStore();
 	const projectData = useprojectDetailStore((state) => state.project);
+	const currentUserId = useProfileStore((state) => state.profile?.id ?? "");
 	const organisations = useOrganisationStore((state) => state.organisations);
 	const organisation = Object.values(organisations).find(
 		(org) => org.id === projectData?.orgId,
@@ -82,11 +161,6 @@ export default function ProjectDetails() {
 	const organisationMembers = getOrganisationMembersFromStore(
 		organisation?.id ?? "",
 	);
-
-	const currentUserId = useProfileStore((state) => state.profile?.id);
-	const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-	const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
-	const [selectedTask, setSelectedTask] = useState<ITask | null>(null);
 
 	if (!projectData) {
 		return <LoadingSpinner />;
@@ -105,42 +179,20 @@ export default function ProjectDetails() {
 					teamMembers={teamMembers}
 				/>
 
-				<Tabs defaultValue="kanban" className="w-full">
-					<TabsTriggerList
-						triggers={[
-							{ value: "kanban", label: "Task Board" },
-							{ value: "overview", label: "Overview" },
-							{ value: "team", label: "Members" },
-							{ value: "settings", label: "Settings" },
-						]}
-						className="overflow-x-auto sm:overflow-visible"
-					/>
-					<PhaseBoard
-						projectId={projectData.id}
-						setIsTaskDetailOpen={setIsTaskDetailOpen}
-						setSelectedTask={setSelectedTask}
-					/>
-
-					<Overview
+				<Suspense fallback={<LoadingSpinner />}>
+					<ProjectWorkspace
 						projectData={projectData}
-						organisationName={organisation?.name}
-					/>
-					<Members
-						members={teamMembers ?? []}
-						organisationMembers={organisationMembers}
+						organisation={organisation}
 						teamMembers={teamMembers}
-						projectId={projectData.id}
-						projectName={projectData.name}
+						organisationMembers={organisationMembers}
 						setChangeRole={setChangeRole}
 						setChangeRoleModal={setChangeRoleModal}
 						setChangeRoleUser={setChangeRoleUser}
 						setChangeRoleId={setChangeRoleId}
+						setIsTaskDetailOpen={setIsTaskDetailOpen}
+						setSelectedTask={setSelectedTask}
 					/>
-					<ProjectSettings
-						project={projectData}
-						organisation={organisation}
-					/>
-				</Tabs>
+				</Suspense>
 			</div>
 			<TaskDetailModal
 				isTaskDetailOpen={isTaskDetailOpen}
@@ -156,7 +208,7 @@ export default function ProjectDetails() {
 				teamMembers={teamMembers || []}
 				projectData={projectData}
 				updateprojectDetails={updateprojectDetails}
-				currentUserId={currentUserId || ""}
+				currentUserId={currentUserId}
 			/>
 			<ChangeRoleModal
 				isOpen={changeRoleModal}
@@ -190,27 +242,24 @@ const Header = ({
 				) : null}
 			</div>
 
-			<nav
-				className="hidden flex-wrap items-center gap-1.5 text-sm lg:flex"
-				aria-label="Breadcrumb"
-			>
-				<Link
-					href="/projects"
-					className="text-muted-foreground transition-colors hover:text-foreground"
-				>
-					Projects
-				</Link>
-				<ChevronRight
-					className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50"
-					aria-hidden
-				/>
-				<span
-					className="min-w-0 truncate font-medium text-foreground"
-					title={projectData.name}
-				>
-					{projectData.name}
-				</span>
-			</nav>
+			<PageBreadcrumbs
+				className="hidden lg:block"
+				items={
+					organisation
+						? [
+								{ label: "Organisations", href: "/organisations" },
+								{
+									label: organisation.name,
+									href: `/organisations/${organisation.id}`,
+								},
+								{ label: projectData.name },
+							]
+						: [
+								{ label: "Projects", href: "/projects" },
+								{ label: projectData.name },
+							]
+				}
+			/>
 
 			<div className="hidden min-w-0 flex-col gap-3 lg:flex">
 				<div className="flex min-w-0 items-start gap-3">

@@ -6,8 +6,10 @@ import { IProfile, ITask } from "@/lib/types";
 import { SummaryCard } from "@/components/base/general/SummaryCard";
 import { CheckSquare, Clock, Users } from "lucide-react";
 import DashboardQuickActions from "./DashboardQuickActions";
+import DashboardShortcuts from "../DashboardShortcuts";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { useProjectStore } from "@/lib/store/projectStore";
+import { formatFriendlyDate } from "@/lib/functions/formatCalendarDate";
 
 const Dashboard = ({
 	profile,
@@ -27,11 +29,7 @@ const Dashboard = ({
 	const awaitingApprovalTasks = tasks.filter(
 		(task) => task.status === "Reviewing",
 	);
-	const today = new Date().toLocaleDateString(undefined, {
-		weekday: "long",
-		month: "short",
-		day: "numeric",
-	});
+	const today = formatFriendlyDate(new Date());
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
@@ -40,7 +38,7 @@ const Dashboard = ({
 					<div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
 					<div className="relative space-y-2">
 						<p
-							className="text-xs font-medium uppercase tracking-wider text-muted-foreground"
+							className="text-xs font-medium tracking-wide text-muted-foreground"
 							suppressHydrationWarning
 						>
 							{today}
@@ -104,7 +102,10 @@ const Dashboard = ({
 					/>
 				</div>
 
-				<DashboardQuickActions />
+				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-stretch">
+					<DashboardQuickActions />
+					<DashboardShortcuts />
+				</div>
 			</div>
 		</div>
 	);

@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback } from "@/components/base/ui/avatar";
 import { Badge } from "@/components/base/ui/badge";
 import { TabsContent } from "@/components/base/ui/tabs";
 import { cn } from "@/lib/functions/utils";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { getTaskMaterialsFromStore } from "@/lib/middleware/materials";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
 import { usePhaseStore } from "@/lib/store/phaseStore";
@@ -380,7 +381,7 @@ const TaskCard = ({
 			role="button"
 			tabIndex={0}
 			className={cn(
-				"cursor-pointer rounded-lg border p-3 text-left shadow-sm transition-shadow hover:shadow-md",
+				"cursor-pointer rounded-lg border p-3 text-left shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 				getTaskSurface(),
 			)}
 			onClick={() => {
@@ -439,10 +440,12 @@ const TaskCard = ({
 					<div className="flex items-center gap-1 text-[11px] text-muted-foreground">
 						<Calendar className="h-3 w-3 shrink-0" />
 						{task.estimatedDuration
-							? new Date(
-									Date.now() +
-										task.estimatedDuration * 24 * 60 * 60 * 1000,
-								).toLocaleDateString()
+							? formatCalendarDate(
+									new Date(
+										Date.now() +
+											task.estimatedDuration * 24 * 60 * 60 * 1000,
+									),
+								)
 							: "No due date"}
 					</div>
 				)}

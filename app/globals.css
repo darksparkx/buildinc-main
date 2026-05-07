@@ -5,7 +5,8 @@
 
 @layer base {
   :root {
-    --background: 51 78% 98%;
+    /* Page canvas: cool off-white (primary hue), very low chroma — not cream */
+    --background: 200 9% 98%;
     --foreground: 0 0% 0%;
     /* Neutral card — avoids bright cyan on every `bg-card` (task page panels, etc.). */
     --card: 0 0% 100%;
@@ -57,13 +58,13 @@
 }
 
 :root {
-  --sidebar: hsl(0 0% 98%);
+  --sidebar: hsl(200 8% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
   --sidebar-primary: hsl(240 5.9% 10%);
   --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent: hsl(200 7% 96%);
   --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-border: hsl(200 12% 91%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
 

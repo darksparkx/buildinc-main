@@ -3,6 +3,7 @@
 import { Avatar, AvatarFallback } from "@/components/base/ui/avatar";
 import { Badge } from "@/components/base/ui/badge";
 import { cn, RupeeIcon } from "@/lib/functions/utils";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 import { IRequest, requestType } from "@/lib/types";
 import React from "react";
 
@@ -161,9 +162,7 @@ const ApprovalTable = ({
 												Submitted
 											</dt>
 											<dd className="font-medium tabular-nums text-foreground">
-												{new Date(request.created_at).toLocaleDateString(undefined, {
-													dateStyle: "medium",
-												})}
+												{formatCalendarDate(request.created_at)}
 											</dd>
 										</div>
 									</dl>

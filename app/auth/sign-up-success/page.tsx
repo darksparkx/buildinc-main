@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/base/ui/button";
 import {
 	Card,
@@ -7,6 +8,11 @@ import {
 	CardTitle,
 } from "@/components/base/ui/card";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+	title: "Confirm your email",
+	description: "Finish signing up by confirming your email address.",
+};
 
 export default function Page() {
 	return (

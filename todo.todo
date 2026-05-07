@@ -8,16 +8,16 @@ NEXT:
 
     admin:
         home:
-            - make the recent avctivities component
+            + recent activity on dashboard (NavigationShortcutsTracker + DashboardShortcuts)
         
         organisations:
-            - ! make the filter and search functionality
+            + filter and search on list
         
         organisationDetails:
             - ensure there is 1 admin when changing roles
 
         Projects:
-            - ! makee the filter and search functionality
+            + filter and search on list
             + show project progress and tasks
 
         CreateProject:
@@ -104,19 +104,16 @@ Master list:
         - 9. Shareable deep links to a task/project (logged-in or read-only token for vendors/clients later).
         + 10. Completion approvals: before approving task completion, auto-check for outstanding requests (material, payment, assignment, etc.) and block or warn.
 
-    (P2) Discovery, navigation, and information architecture
-        1. Global search (orgs, projects, tasks, people)—wire existing cmdk primitive app-wide.
-        2. Recent items and favorites / pinned projects.
-        3. Breadcrumbs on deep pages (project → phase → task).
-        4. Deep linking for every meaningful screen (share URL, refresh-safe).
-        5. Keyboard shortcuts (e.g. open search, go dashboard) for power users on desktop.
-        6. Filters saved as views (“My overdue”, “This site only”).
-        7. Cross-links from dashboard cards into filtered lists.
-        8. Consistent page titles (`metadata` per route) for bookmarks and tabs.
-        9. 404 / error pages with next steps and preserved auth context.
-        10. Organisations list: filters + search (admin backlog).
-        11. Projects list: filters + search (admin backlog).
-        12. Admin home/dashboard: Recent activity component fed by real events (not static demo).
+    + (P2) Discovery, navigation, and information architecture
+        - 1. Global search (orgs, projects, tasks, people)—wire existing cmdk primitive app-wide.
+        + 2. Recent activity on dashboard (last opened project, organisation, task).
+        + 3. Breadcrumbs on deep pages (project → phase → task).
+        + 4. Deep linking for every meaningful screen (share URL, refresh-safe).
+        + 5. Consistent page titles (`metadata` per route) for bookmarks and tabs.
+        + 6. 404 / error pages with next steps and preserved auth context.
+        + 7. Organisations list: filters + search (admin backlog).
+        + 8. Projects list: filters + search (admin backlog).
+        + 9. Admin home/dashboard: Recent activity component fed by real events (not static demo).
 
     (P3) Reporting, analytics, and Statistics
         1. Owner/admin statistics dashboard: throughput, spend vs planned, completion rates, overdue counts.

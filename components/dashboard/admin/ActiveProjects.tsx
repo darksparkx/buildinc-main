@@ -1,18 +1,36 @@
+"use client";
+
 import {
 	Card,
 	CardHeader,
 	CardTitle,
-	CardDescription,
 	CardContent,
 } from "@/components/base/ui/card";
 import { FolderOpen } from "lucide-react";
-import React from "react";
+import React, { useEffect } from "react";
 import { Badge } from "@/components/base/ui/badge";
 import { Progress } from "@/components/base/ui/progress";
 import { useProjectStore } from "@/lib/store/projectStore";
+import { usePhaseStore } from "@/lib/store/phaseStore";
+import { useTaskStore } from "@/lib/store/taskStore";
+import { getProjectProgress } from "@/lib/functions/base";
+import { formatCalendarDate } from "@/lib/functions/formatCalendarDate";
 
 const ActiveProjects = () => {
 	const projects = useProjectStore((state) => state.projects);
+	const projectCount = useProjectStore((state) => Object.keys(state.projects).length);
+	const phaseCount = usePhaseStore((state) => Object.keys(state.phases).length);
+	const taskProgressKey = useTaskStore((state) =>
+		Object.values(state.tasks)
+			.map((t) => `${t.id}:${t.status}`)
+			.sort()
+			.join("|"),
+	);
+
+	useEffect(() => {
+		getProjectProgress();
+	}, [projectCount, phaseCount, taskProgressKey]);
+
 	const activeProjects = Object.values(projects).filter(
 		(project) => project.status === "Active",
 	);
@@ -25,9 +43,6 @@ const ActiveProjects = () => {
 					</span>
 					Active projects
 				</CardTitle>
-				<CardDescription>
-					Progress and due dates for everything currently in motion.
-				</CardDescription>
 			</CardHeader>
 			<CardContent className="max-h-[min(420px,70vh)] space-y-0 overflow-y-auto overscroll-contain px-4 pb-6 sm:px-6">
 				{activeProjects.length > 0 ? (
@@ -43,15 +58,10 @@ const ActiveProjects = () => {
 							>
 								<ProjectShowcase
 									name={project.name}
-									percentage={
-										project.progress
-											? Math.round(project.progress)
-											: 0
-									}
+									percentage={Math.round(project.progress ?? 0)}
 									duedate={
-										project.endDate &&
-										project.endDate instanceof Date
-											? project.endDate.toDateString()
+										project.endDate
+											? formatCalendarDate(project.endDate)
 											: "Not Set"
 									}
 								/>
