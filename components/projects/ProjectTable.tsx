@@ -23,6 +23,7 @@ import { ChevronRight, FolderOpen, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { cn } from "@/lib/functions/utils";
+import { ProjectProgressDisplay } from "./ProjectProgressDisplay";
 
 type Props = {
 	filteredProjects: IProject[];
@@ -96,19 +97,12 @@ function ProjectMobileRow({
 					) : null}
 				</div>
 				{admin ? (
-					<div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-						<span className="tabular-nums">
-							{Math.round(project.progress ?? 0)}% progress
-						</span>
-						<span className="inline-flex items-center gap-0.5 tabular-nums">
-							{project.budget?.toLocaleString("en-IN") ?? "0"}
-							<RupeeIcon />
-							<span className="text-muted-foreground/80">
-								{" "}
-								({pct}% spent)
-							</span>
-						</span>
-						<span className="tabular-nums">{project.totalTasks ?? 0} tasks</span>
+					<div className="mt-3 space-y-2">
+						<ProjectProgressDisplay project={project} />
+						<p className="text-xs text-muted-foreground tabular-nums">
+							Budget {project.budget?.toLocaleString("en-IN") ?? "0"}
+							<RupeeIcon /> · {pct}% spent
+						</p>
 					</div>
 				) : (
 					<p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
@@ -194,7 +188,7 @@ const ProjectTable = ({
 													Budget
 												</TableHead>
 												<TableHead className="pr-4 text-center tabular-nums">
-													Tasks
+													Tasks done
 												</TableHead>
 											</>
 										) : (
@@ -238,8 +232,11 @@ const ProjectTable = ({
 												</TableCell>
 												{admin ? (
 													<>
-														<TableCell className="text-center tabular-nums">
-															{Math.round(project.progress ?? 0)}%
+														<TableCell className="min-w-[140px] px-2">
+															<ProjectProgressDisplay
+																project={project}
+																compact
+															/>
 														</TableCell>
 														<TableCell className="text-center">
 															<div className="space-y-0.5">
@@ -254,8 +251,11 @@ const ProjectTable = ({
 																</p>
 															</div>
 														</TableCell>
-														<TableCell className="pr-4 text-center tabular-nums">
-															{project.totalTasks ?? 0}
+														<TableCell className="pr-4 text-center tabular-nums text-muted-foreground">
+															<span className="text-foreground font-medium">
+																{project.completedTasks ?? 0}
+															</span>
+															<span> / {project.totalTasks ?? 0}</span>
 														</TableCell>
 													</>
 												) : (

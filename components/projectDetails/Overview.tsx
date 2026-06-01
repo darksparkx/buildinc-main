@@ -11,7 +11,7 @@ import { TabsContent } from "@/components/base/ui/tabs";
 import { Badge } from "@/components/base/ui/badge";
 import { formatDate, RupeeIcon } from "@/lib/functions/utils";
 import { getProjectMembersByProjectIdFromStore } from "@/lib/middleware/projectMembers";
-import { IProject } from "@/lib/types";
+import { IProject, ITask } from "@/lib/types";
 import {
 	CalendarRange,
 	FileText,
@@ -21,6 +21,7 @@ import {
 	UserCircle,
 	Wallet,
 } from "lucide-react";
+import { ProjectLinkedTasks } from "./ProjectLinkedTasks";
 
 function statusVariant(
 	status: string | undefined
@@ -48,9 +49,13 @@ function statusVariant(
 export const Overview = ({
 	projectData,
 	organisationName,
+	onSelectTask,
+	onViewBoard,
 }: {
 	projectData: IProject;
 	organisationName?: string;
+	onSelectTask: (task: ITask) => void;
+	onViewBoard: () => void;
 }) => {
 	const supervisor = getProjectMembersByProjectIdFromStore(
 		projectData.id
@@ -64,6 +69,8 @@ export const Overview = ({
 	const progress = Number.isFinite(projectData.progress)
 		? projectData.progress
 		: 0;
+	const totalTasks = projectData.totalTasks ?? 0;
+	const completedTasks = projectData.completedTasks ?? 0;
 
 	const startLabel = projectData.startDate
 		? formatDate(projectData.startDate)
@@ -212,6 +219,9 @@ export const Overview = ({
 									{Math.round(progress)}%
 								</span>
 							</div>
+							<p className="text-xs text-muted-foreground tabular-nums">
+								{completedTasks} of {totalTasks} tasks complete
+							</p>
 							<Progress
 								value={Math.min(100, Math.max(0, progress))}
 								className="h-2.5 bg-muted"
@@ -231,6 +241,12 @@ export const Overview = ({
 					</CardContent>
 				</Card>
 			</div>
+
+			<ProjectLinkedTasks
+				project={projectData}
+				onSelectTask={onSelectTask}
+				onViewBoard={onViewBoard}
+			/>
 		</TabsContent>
 	);
 };

@@ -21,7 +21,7 @@ NEXT:
             + show project progress and tasks
 
         CreateProject:
-            + save custom tmeplates in DB nad show them when selecting temapltes
+            - save custom templates in DB + guided building-spec generator → see (P4) items 3–7
 
         projectDetails:
             + fix used budget not showing
@@ -41,10 +41,10 @@ NEXT:
 
     + add laoding to buttons: DONE
     + add toasts everywhere: DONE
-    + material costing calculator
+    - material costing calculator → (P4).11 + (P5).6
     when approving a task for completion, first check if any requests are left automatically
     dont showe budget to supervisor or anyone else othervthan admin
-    aadding budget per sq ft
+    - adding budget per sq ft → see (P4) Intelligent project setup (building spec + auto budget)
 /**/
 TODO:
     + A front page.
@@ -91,6 +91,7 @@ TODO:
 /**/
 Master list:
     Cross-reference: granular stubs remain above (`NEXT`, `TODO`, `billing + beta`)—merge duplicates against this list as you complete work.
+    Sequential note: finish (P3) CSV round-trip (item 10), then (P4) intelligent project setup before (P5) vendors. Budget per sqft lives in (P4), not P3.
 
     + (P1) Collaboration, workflow, and communication
         + 1. Unified in-app inbox / notification center (invites, approvals, assignments, completions, rejections)—backed by real queries, not demo UI.
@@ -115,19 +116,33 @@ Master list:
         + 8. Projects list: filters + search (admin backlog).
         + 9. Admin home/dashboard: Recent activity component fed by real events (not static demo).
 
-    (P3) Reporting, analytics, and Statistics
-        1. Owner/admin statistics dashboard: throughput, spend vs planned, completion rates, overdue counts.
-        2. Time-range filters and comparison vs previous period.
-        3. Breakdown by organisation / project / phase.
-        4. Export chart/table data as CSV behind tier gates if tiers promise analytics depth.
-        5. Scheduled exports (email CSV weekly)—premium lever.
-        6. Material usage vs planned rollups.
-        7. Approval SLA metrics (time pending).
-        8. Align plan marketing copy with implemented tier differences (no “advanced stats” without delivery).
-        9. Surfaces for project progress and linked tasks on project list/detail (admin backlog).
-        10. Budget per sq ft (organisation and/or project) if required by workflows.
+    + (P3) Reporting, analytics, and Statistics
+        + 1. Owner/admin statistics dashboard: throughput, spend vs planned, completion rates, overdue counts.
+        + 2. Time-range filters and comparison vs previous period.
+        + 3. Breakdown by organisation / project / phase (phase table + org Statistics tab + charts).
+        + 4. Export chart/table data as CSV behind tier gates (Starter: none; Pro: export; Enterprise: import + export).
+        - 5. Scheduled exports (email CSV weekly)—premium lever.
+        + 6. Material usage vs planned rollups (cost/qty by item, project breakdown, CSV).
+        + 7. Approval SLA metrics (time pending): avg/oldest wait, 48h/7d thresholds, resolution time vs prior period, by-type table, CSV.
+        + 8. Align plan marketing copy with implemented tier differences (planOffers: in-app / export / import-export per tier).
+        + 9. Surfaces for project progress and linked tasks on project list/detail (progress bar + overdue on list; linked tasks on Overview).
+        - 10. Statistics CSV round-trip: export file re-importable (project + phase sections at minimum); import preview/validation; document format; no dependency on (P4)—current gap is import only accepts project_id/budget/spent while export includes overview/materials/approvals/phases.
 
-    (P4) Vendors, procurement, and field alignment
+    (P4) Intelligent project setup, estimating, and auto-provisioning
+        Scope: user describes the building (floors, sqft, typology); app generates phases, tasks, materials, and budget from admin rate card—includes budget per sqft as a derived metric. Do this phase before treating ₹/sqft as a standalone reporting feature.
+        1. Data model: structured building spec on project (floor count, total sqft, archetype e.g. commercial center / residential, units per floor such as 2 flats per floor); store `total_sqft` and derived `budget_per_sqft`; org/subscriber estimator rate card (material unit costs, labour rates by trade, optional ₹/sqft benchmarks by project type).
+        2. Admin first-run onboarding: on subscriber/org initiation, collect default material costs, labour rates, and optional benchmark ₹/sqft by project type—persist to settings; editable later in admin Settings (single source of truth with (P5).7 material averages—do not fork two cost tables).
+        3. Create project — building spec step: capture floors, total sqft, project type/layout (commercial, multi-flat per floor, etc.); validation; persist spec before generation.
+        4. Generation engine: from building spec + rate card + rules/templates → auto-create phases, tasks, materials (planned qty + unit cost), planned task/phase budgets, rolled-up project budget, and budget per sqft.
+        5. Create project UX: new guided path (“Estimate & generate”) alongside existing manual template flow; review step shows full generated breakdown (phases, tasks, materials, budget, ₹/sqft) with edit/tweak before commit.
+        6. Persist on create: write generated phases, tasks, materials, and budgets through the same create pipeline as today’s manual flow (transactional, rollback on failure).
+        7. Save generated plans as org templates in DB and list them in the create-project template picker (replaces ad-hoc JSON-only templates)—see also (P21).6.
+        8. Surface budget per sqft: org overview, project overview/detail, and statistics when `total_sqft` is set—planned budget/sqft and actual spend/sqft where spend exists.
+        9. Role visibility: budget totals and ₹/sqft owner/admin-only; supervisors and field roles do not see financial totals (align (P6).10 UI + RLS with NEXT “don’t show budget to supervisor”).
+        10. Statistics & CSV: when spec + sqft exist, include budget/sqft columns in owner exports; optional import of spec/sqft on Enterprise (extends (P3).10 round-trip).
+        11. Integrate rate card with in-product material costing calculator ((P5).6) and vendor last-paid hints ((P5).5) so estimates stay consistent with procurement flows.
+
+    (P5) Vendors, procurement, and field alignment
         1. Vendors directory (contact, categories, default terms).
         2. Link materials / requests to vendors where relevant.
         3. Purchase or request history per vendor.
@@ -136,7 +151,7 @@ Master list:
         6. Material costing calculator in-product.
         7. Settings: setup/configure material average cost (admin backlog).
 
-    (P5) Permissions, roles, and governance
+    (P6) Permissions, roles, and governance
         1. Explicit role matrix (owner, admin, manager, contributor, viewer, finance-only, etc.).
         2. Project-level roles distinct from org-level where needed.
         3. Field-safe mode: hide sensitive totals for roles that must not see money.
@@ -149,7 +164,7 @@ Master list:
         10. Financial visibility: do not show budget/spend to supervisors or non-admins—admin-only (UI + RLS aligned).
         11. Employees: allow voluntarily leaving an organisation (self-remove / leave flow).
 
-    (P6) Billing, subscription, and commercial UX
+    (P7) Billing, subscription, and commercial UX
         1. In-app subscription status card (plan, renewal/end, limits used vs max).
         2. Upgrade/downgrade UX copy and enforced transitions—even if fulfillment stays manual for now.
         3. Invoice / receipt artefact or external link placeholder until gateway lands.
@@ -158,7 +173,7 @@ Master list:
         6. Fair messaging when limits hit—who must hold the subscription (owner vs member).
         7. Organisation-level budget: set and edit org budget; allocate from org pool to projects (TODO backlog).
 
-    (P7) Auth, account, and profile
+    (P8) Auth, account, and profile
         1. Email verification UX polish (resend, clear errors).
         2. Session/security area: password change; sign-out everywhere when supported.
         3. MFA when policy supports it—especially for paying owners.
@@ -166,7 +181,7 @@ Master list:
         5. Data export request (“Download my data”) aside from delete.
         6. Profile completeness prompts (photo, phone for coordination).
 
-    (P8) Mobile, responsive, and Capacitor readiness
+    (P9) Mobile, responsive, and Capacitor readiness
         1. Touch targets and spacing audit on every primary flow.
         2. Safe areas and scroll containment vs bottom nav / keyboard overlap.
         3. Pull-to-refresh or explicit refresh where realtime might lag.
@@ -176,7 +191,7 @@ Master list:
         7. Store data safety text aligned with actual SDKs and data flows.
         8. Mobile responsiveness pass across flows (NEXT general backlog—not only Capacitor shell).
 
-    (P9) Performance and perceived speed
+    (P10) Performance and perceived speed
         1. Route-level `loading.tsx` and skeletons matching final layout (avoid layout jump).
         2. List virtualization if tables grow large.
         3. Image optimization pipeline for uploads (caps, optional client compression).
@@ -186,7 +201,7 @@ Master list:
         7. Audit authenticated API chatter for redundant fetches.
         8. Database optimisation (indexes, hot queries) alongside recurring RLS reviews (NEXT general backlog).
 
-    (P10) Accessibility (WCAG-minded)
+    (P11) Accessibility (WCAG-minded)
         1. Focus order and visible focus rings on custom components.
         2. Screen reader labels on icon-only buttons (sidebar, mobile nav).
         3. Form errors tied to fields (`aria-describedby`).
@@ -194,12 +209,12 @@ Master list:
         5. Respect `prefers-reduced-motion` where Framer Motion runs.
         6. Skip link to main content on authenticated shell.
 
-    (P11) Internationalisation and locale
+    (P12) Internationalisation and locale
         1. Locale-ready dates and numbers (centralise ₹ and formatting).
         2. Timezone clarity on deadlines (local vs org timezone).
         3. i18n string architecture—even if English-only at launch.
 
-    (P12) Security and abuse resistance
+    (P13) Security and abuse resistance
         1. Rate limiting on sensitive APIs (`unlock-with-code`, auth-adjacent routes).
         2. CAPTCHA or backoff on signup/login if abuse appears.
         3. Content Security Policy and standard security headers on Vercel.
@@ -208,7 +223,7 @@ Master list:
         6. RLS regression checklist after schema/policy changes; no prod dev “disable RLS” scripts.
         7. Full security code review with tracked remediation (TODO backlog).
 
-    (P13) Compliance, privacy, and trust surfaces
+    (P14) Compliance, privacy, and trust surfaces
         1. Privacy/terms/cookies reviewed against actual analytics, email, Capacitor SDKs.
         2. Cookie consent if non-essential cookies or marketing pixels ship.
         3. Subprocessors list (Supabase, Vercel, email, error tracker).
@@ -216,13 +231,13 @@ Master list:
         5. Incident channel (status page or `/status` later).
         6. Privacy policy, terms of service, cookies/data pages: keep deployed copy aligned with actual product, billing mode, and SDKs (TODO backlog).
 
-    (P14) Observability and supportability
+    (P15) Observability and supportability
         1. Error tracking (e.g. Sentry) with scrubbed user/org context.
         2. Structured logs on API routes with correlation ids.
         3. Support runbook or light admin tools for common fixes (stuck invite, wrong tier).
         4. Feature flags for risky launches (statistics v1, vendors v1).
 
-    (P15) QA depth
+    (P16) QA depth
         1. `next build` in CI so broken deploys fail PRs.
         2. E2E: signup → org → project → task → approval critical path.
         3. Contract tests on entitlement parsing and limit enforcement.
@@ -232,7 +247,7 @@ Master list:
         7. Production Supabase: Auth URL configuration, redirect URLs, email templates verified end-to-end (Phase F1).
         8. Keep baseline UX: new flows ship with button loading states + toast/error feedback (legacy NEXT items marked DONE).
 
-    (P16) Marketing, SEO, and store-facing polish
+    (P17) Marketing, SEO, and store-facing polish
         1. Landing: screenshots and sections matching real UI; pricing honesty vs code unlock.
         2. `robots.txt` and `sitemap.xml` if public discovery matters.
         3. `manifest.json`, icons, theme colour for install/PWA feel before Capacitor.
@@ -241,7 +256,7 @@ Master list:
         6. Front page / marketing landing iteration (TODO backlog—copy, structure, proof points).
         7. Sitewide visual makeover pass (TODO backlog—typography, spacing, hero, screenshots).
 
-    (P17) Microcopy, empty states, and onboarding
+    (P18) Microcopy, empty states, and onboarding
         1. First-run checklist on dashboard (dismissible, progress).
         2. Empty states with one primary CTA per list view.
         3. Tooltip glossary for domain terms (phase, approval, spend vs planned).
@@ -249,14 +264,14 @@ Master list:
         5. Success copy that states what happens next—not only toasts.
         6. Guided tutorial or first-run tour for new accounts (Phase E4).
 
-    (P18) Visual and brand consistency
+    (P19) Visual and brand consistency
         1. Dark mode audit (charts, borders, banners).
         2. Spacing scale pass—cards, tables, modals.
         3. Distinct loading vs empty vs error visuals everywhere.
         4. Light illustration/iconography on key empty states.
         5. Colour scheme refinement pass (NEXT general backlog).
 
-    (P19) Integrations and extensibility (longer horizon)
+    (P20) Integrations and extensibility (longer horizon)
         1. Calendar export (iCal) for task deadlines.
         2. Outbound webhooks (“task completed”) for customer systems.
         3. Zapier/Make or CSV SFTP—enterprise storyline.
@@ -266,7 +281,7 @@ Master list:
         7. Job costing / Tally (or equivalent accounting) integration (`Later:` backlog).
         8. Payouts workflow if you pay subcontractors/suppliers through the product (`Later:` backlog).
 
-    (P20) Codebase cleanup tied to polish
+    (P21) Codebase cleanup tied to polish
         + 1. Remove or replace demo notification UI — done: `InboxBell` + deleted `DashboardNotifications`.
         2. Wire command palette globally once search exists.
         3. Fix nav duplication / consistency (`navitems.ts` duplicate Settings entries).
@@ -274,13 +289,13 @@ Master list:
         5. Project details: fix used budget not showing (admin backlog).
         6. Create Project: save custom templates in DB and list them in the template picker (admin backlog).
         7. Project details: ship complete Settings tab (admin backlog).
-        8. Admin Settings: finish remaining screens (overlap with material averages—see P4).
-        9. Vendors admin area: implement end-to-end (screens + API + RLS)—full scope under P4.
+        8. Admin Settings: finish remaining screens (overlap with estimator rate card—see (P4).2 and (P5).7).
+        9. Vendors admin area: implement end-to-end (screens + API + RLS)—full scope under (P5).
 
-    (P21) Billing beta — close-out checklist (internal phases B–F)
+    (P22) Billing beta — close-out checklist (internal phases B–F)
         1. Phase B–D: verify in prod—subscriber gates, org/project/seat caps, renewal banner + employee empty states, billing in nav, post-unlock entitlement refresh.
         2. Phase E: billing card detail (plan, status, provider, periods, caps); user menu shows correct name/email.
         3. Phase E: `/statistics` routes + owner vs member behaviour matches shipping intent.
         4. Phase F: legal copy fits manual/beta billing; beta comms + final launch pass.
-        5. Track payment-gateway cutover separately under P19.5 when leaving beta.
+        5. Track payment-gateway cutover separately under (P20).5 when leaving beta.
 

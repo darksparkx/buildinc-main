@@ -20,12 +20,23 @@ import { TabsTriggerList } from "@/components/base/general/TabsTriggerList";
 import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import { getOrganisationProjectsFromStore } from "@/lib/middleware/projects";
 import ChangeRoleModal from "./ChangeRoleModal";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
+import { useProfileStore } from "@/lib/store/profileStore";
 import { Suspense, useState } from "react";
 import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
+import OrganisationStatistics from "./OrganisationStatistics";
 
-const ORG_WORKSPACE_TABS = [
+const ORG_WORKSPACE_TABS_BASE = [
 	"overview",
 	"projects",
+	"members",
+	"settings",
+] as const;
+
+const ORG_WORKSPACE_TABS_WITH_STATS = [
+	"overview",
+	"projects",
+	"statistics",
 	"members",
 	"settings",
 ] as const;
@@ -40,6 +51,7 @@ function OrganisationWorkspace({
 	setChangeRoleUser,
 	setChangeRoleModal,
 	setChangeRoleId,
+	showStatisticsTab,
 }: {
 	organisation: IOrganisation;
 	projects: IProject[];
@@ -50,18 +62,27 @@ function OrganisationWorkspace({
 	setChangeRoleUser: (v: string) => void;
 	setChangeRoleModal: (v: boolean) => void;
 	setChangeRoleId: (v: string) => void;
+	showStatisticsTab: boolean;
 }) {
-	const [activeTab, setTab] = useUrlQueryTab(ORG_WORKSPACE_TABS, "overview");
+	const tabIds = showStatisticsTab
+		? ORG_WORKSPACE_TABS_WITH_STATS
+		: ORG_WORKSPACE_TABS_BASE;
+	const [activeTab, setTab] = useUrlQueryTab(tabIds, "overview");
+
+	const triggers = [
+		{ value: "overview", label: "Overview" },
+		{ value: "projects", label: "Projects" },
+		...(showStatisticsTab
+			? [{ value: "statistics" as const, label: "Statistics" }]
+			: []),
+		{ value: "members", label: "Members" },
+		{ value: "settings", label: "Settings" },
+	];
 
 	return (
 		<Tabs value={activeTab} onValueChange={setTab} className="w-full">
 			<TabsTriggerList
-				triggers={[
-					{ value: "overview", label: "Overview" },
-					{ value: "projects", label: "Projects" },
-					{ value: "members", label: "Members" },
-					{ value: "settings", label: "Settings" },
-				]}
+				triggers={triggers}
 				className="overflow-x-auto sm:overflow-visible"
 			/>
 
@@ -71,6 +92,13 @@ function OrganisationWorkspace({
 				totalSpent={totalSpent}
 				budgetUtilization={budgetUtilization}
 			/>
+
+			{showStatisticsTab ? (
+				<OrganisationStatistics
+					organisation={organisation}
+					projects={projects}
+				/>
+			) : null}
 
 			<TabsContent value="projects" className="mt-0 space-y-4">
 				<div>
@@ -112,6 +140,8 @@ export default function OrganisationDetails() {
 	const organisation = useOrganisationDetailStore(
 		(state) => state.organisation
 	);
+	const profile = useProfileStore((s) => s.profile);
+	const ownerShell = useUsesOwnerShell(profile);
 	const projects = getOrganisationProjectsFromStore(organisation?.id || "");
 
 	const { totalBudget, totalSpent, budgetUtilization } =
@@ -142,6 +172,7 @@ export default function OrganisationDetails() {
 						setChangeRoleUser={setChangeRoleUser}
 						setChangeRoleModal={setChangeRoleModal}
 						setChangeRoleId={setChangeRoleId}
+						showStatisticsTab={ownerShell}
 					/>
 				</Suspense>
 

@@ -30,6 +30,11 @@
     /* Side/top/bottom nav — tinted chrome (primary hue), not flat white */
     --nav-chrome: 197 46% 93%;
     --nav-chrome-border: 197 38% 78%;
+    --chart-1: 197 74% 48%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 43 74% 49%;
+    --chart-4: 27 87% 55%;
+    --chart-5: 340 75% 55%;
   }
   .dark {
     /* Modern sleek: near-black blue-gray, crisp blue accent, restrained chrome */
@@ -54,6 +59,11 @@
     --ring: 217 91% 59%;
     --nav-chrome: 224 24% 9%;
     --nav-chrome-border: 220 16% 22%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 43 74% 55%;
+    --chart-4: 27 87% 58%;
+    --chart-5: 340 75% 58%;
   }
 }
 

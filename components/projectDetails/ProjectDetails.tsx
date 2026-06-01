@@ -23,6 +23,7 @@ import {
 	IProjectProfile,
 	ITask,
 } from "@/lib/types";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
 import { FolderOpen, IndianRupee, Percent, Users } from "lucide-react";
 import {
@@ -38,6 +39,7 @@ import TaskDetailModal from "./Modals/TaskDetailModal";
 import { Overview } from "./Overview";
 import { PhaseBoard } from "./PhaseBoard";
 import { ProjectSettings } from "./ProjectSettings";
+import { ProjectStatistics } from "./ProjectStatistics";
 
 function statusVariant(
 	status: string | undefined
@@ -62,9 +64,17 @@ function statusVariant(
 	return "secondary";
 }
 
-const PROJECT_WORKSPACE_TABS = [
+const PROJECT_WORKSPACE_TABS_BASE = [
 	"kanban",
 	"overview",
+	"team",
+	"settings",
+] as const;
+
+const PROJECT_WORKSPACE_TABS_WITH_STATS = [
+	"kanban",
+	"overview",
+	"statistics",
 	"team",
 	"settings",
 ] as const;
@@ -80,6 +90,7 @@ function ProjectWorkspace({
 	setChangeRoleId,
 	setIsTaskDetailOpen,
 	setSelectedTask,
+	showStatisticsTab,
 }: {
 	projectData: IProject;
 	organisation: IOrganisation | undefined;
@@ -91,21 +102,27 @@ function ProjectWorkspace({
 	setChangeRoleId: Dispatch<SetStateAction<string>>;
 	setIsTaskDetailOpen: Dispatch<SetStateAction<boolean>>;
 	setSelectedTask: Dispatch<SetStateAction<ITask | null>>;
+	showStatisticsTab: boolean;
 }) {
-	const [activeTab, setTab] = useUrlQueryTab(
-		PROJECT_WORKSPACE_TABS,
-		"kanban",
-	);
+	const tabIds = showStatisticsTab
+		? PROJECT_WORKSPACE_TABS_WITH_STATS
+		: PROJECT_WORKSPACE_TABS_BASE;
+	const [activeTab, setTab] = useUrlQueryTab(tabIds, "kanban");
+
+	const triggers = [
+		{ value: "kanban", label: "Task Board" },
+		{ value: "overview", label: "Overview" },
+		...(showStatisticsTab
+			? [{ value: "statistics" as const, label: "Statistics" }]
+			: []),
+		{ value: "team", label: "Members" },
+		{ value: "settings", label: "Settings" },
+	];
 
 	return (
 		<Tabs value={activeTab} onValueChange={setTab} className="w-full">
 			<TabsTriggerList
-				triggers={[
-					{ value: "kanban", label: "Task Board" },
-					{ value: "overview", label: "Overview" },
-					{ value: "team", label: "Members" },
-					{ value: "settings", label: "Settings" },
-				]}
+				triggers={triggers}
 				className="overflow-x-auto sm:overflow-visible"
 			/>
 			<PhaseBoard
@@ -117,7 +134,15 @@ function ProjectWorkspace({
 			<Overview
 				projectData={projectData}
 				organisationName={organisation?.name}
+				onSelectTask={(task) => {
+					setSelectedTask(task);
+					setIsTaskDetailOpen(true);
+				}}
+				onViewBoard={() => setTab("kanban")}
 			/>
+			{showStatisticsTab ? (
+				<ProjectStatistics projectData={projectData} />
+			) : null}
 			<Members
 				members={teamMembers ?? []}
 				organisationMembers={organisationMembers}
@@ -148,7 +173,9 @@ export default function ProjectDetails() {
 
 	const { updateprojectDetails } = useprojectDetailStore();
 	const projectData = useprojectDetailStore((state) => state.project);
-	const currentUserId = useProfileStore((state) => state.profile?.id ?? "");
+	const profile = useProfileStore((state) => state.profile);
+	const ownerShell = useUsesOwnerShell(profile);
+	const currentUserId = profile?.id ?? "";
 	const organisations = useOrganisationStore((state) => state.organisations);
 	const organisation = Object.values(organisations).find(
 		(org) => org.id === projectData?.orgId,
@@ -191,6 +218,7 @@ export default function ProjectDetails() {
 						setChangeRoleId={setChangeRoleId}
 						setIsTaskDetailOpen={setIsTaskDetailOpen}
 						setSelectedTask={setSelectedTask}
+						showStatisticsTab={ownerShell}
 					/>
 				</Suspense>
 			</div>
@@ -299,6 +327,8 @@ const Summary = ({
 	const progress = Number.isFinite(projectData.progress)
 		? projectData.progress
 		: 0;
+	const totalTasks = projectData.totalTasks ?? 0;
+	const completedTasks = projectData.completedTasks ?? 0;
 
 	return (
 		<div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4">
@@ -362,6 +392,9 @@ const Summary = ({
 					<div className="text-2xl font-bold tabular-nums">
 						{Math.round(progress)}%
 					</div>
+					<p className="mt-1 text-xs text-muted-foreground tabular-nums">
+						{completedTasks} / {totalTasks} tasks
+					</p>
 				</CardContent>
 			</Card>
 		</div>
