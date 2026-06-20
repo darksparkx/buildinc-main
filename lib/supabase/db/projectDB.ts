@@ -9,7 +9,7 @@ export const projectDB = {
 	// Gets projects owned by a user
 	async getUserProjects(userId: string) {
 		const { data, error } = await supabase
-			.from("projects")
+			.from("projects_app")
 			.select("*")
 			.eq("owner", userId);
 
@@ -20,7 +20,7 @@ export const projectDB = {
 	// Gets projects in an organisation
 	async getOrganisationProjects(orgId: string) {
 		const { data, error } = await supabase
-			.from("projects")
+			.from("projects_app")
 			.select("*")
 			.eq("orgId", orgId);
 
@@ -31,7 +31,7 @@ export const projectDB = {
 	// Gets a single project by its ID
 	async getProject(id: string) {
 		const { data, error } = await supabase
-			.from("projects")
+			.from("projects_app")
 			.select("*")
 			.eq("id", id)
 			.single();

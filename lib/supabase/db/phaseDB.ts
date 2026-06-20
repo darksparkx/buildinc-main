@@ -9,7 +9,7 @@ export const phaseDB = {
 	// Gets phases for a project
 	async getProjectPhases(projectId: string) {
 		const { data, error } = await supabase
-			.from("phases")
+			.from("phases_app")
 			.select("*")
 			.eq("projectId", projectId)
 			.order("order", { ascending: true });
@@ -21,7 +21,7 @@ export const phaseDB = {
 	// Gets a single phase by its ID
 	async getPhase(id: string) {
 		const { data, error } = await supabase
-			.from("phases")
+			.from("phases_app")
 			.select("*")
 			.eq("id", id)
 			.single();

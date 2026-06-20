@@ -8,7 +8,7 @@ export const materialDB = {
 	// Gets materials for a task
 	async getTaskMaterials(taskId: string) {
 		const { data, error } = await supabase
-			.from("materials")
+			.from("materials_app")
 			.select("*")
 			.eq("taskId", taskId);
 
@@ -19,7 +19,7 @@ export const materialDB = {
 	// Gets a single material by its ID
 	async getMaterial(id: string) {
 		const { data, error } = await supabase
-			.from("materials")
+			.from("materials_app")
 			.select("*")
 			.eq("id", id)
 			.single();
@@ -31,7 +31,7 @@ export const materialDB = {
 	// Gets materials by their IDs
 	async getMaterialsById(ids: string[]) {
 		const { data, error } = await supabase
-			.from("materials")
+			.from("materials_app")
 			.select("*")
 			.in("id", ids);
 

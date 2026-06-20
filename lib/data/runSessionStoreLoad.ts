@@ -1,5 +1,6 @@
 import { recomputePhaseAndProjectProgress } from "@/lib/functions/base";
 import { projectDetails } from "@/lib/functions/projectDetails";
+import { loadEstimatorRateCard } from "@/lib/middleware/estimatorRateCard";
 import { getMaterialPricingsByUserId } from "@/lib/middleware/materialPricing";
 import { getTaskMaterials } from "@/lib/middleware/materials";
 import { getOrganisationMembers } from "@/lib/middleware/organisationMembers";
@@ -71,6 +72,10 @@ async function loadAdminData(userProfile: IProfile) {
 		getUserOrganisations(userProfile.id),
 		getUserProjects(userProfile.id),
 		getMaterialPricingsByUserId(userProfile.id),
+		loadEstimatorRateCard(userProfile.id).catch((err) => {
+			console.error("Failed to load estimator rate card:", err);
+			return null;
+		}),
 	]);
 
 	await Promise.all([

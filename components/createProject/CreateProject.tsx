@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ProgressIndicator from "./ProgressIndicator";
 import {
 	IOrganisation,
@@ -9,11 +9,16 @@ import {
 	IProjectCreationData,
 	IProjectTemplate,
 } from "@/lib/types";
-import ProjectDetails from "./ProjectDetails";
 import Phases from "./phases/Phases";
 import ReviewConfirm from "./ReviewConfirm";
 import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import Tasks from "./tasks/Tasks";
+import ProjectQuestionnaire, {
+	validateFullQuestionnaire,
+} from "./questionnaire/ProjectQuestionnaire";
+import QuestionnaireReviewStep from "./questionnaire/QuestionnaireReviewStep";
+import { emptyQuestionnaire } from "@/lib/projectGeneration/questionnaire";
+import type { ProjectCreationQuestionnaire } from "@/lib/projectGeneration/types";
 
 export default function CreateProject({
 	profile,
@@ -26,16 +31,18 @@ export default function CreateProject({
 	const tomorrow = new Date(today);
 	tomorrow.setDate(tomorrow.getDate() + 1);
 
+	const initialQuestionnaire = emptyQuestionnaire();
+
 	const initialProjectData: IProjectCreationData = {
 		id: crypto.randomUUID(),
 		owner: profile.id,
 		status: "Inactive",
-		name: "1",
-		description: "1",
+		name: "",
+		description: "",
 		organisationId: "",
 		startDate: today,
 		endDate: tomorrow,
-		budget: 1500000,
+		budget: 0,
 		location: "",
 		supervisor: "",
 		phases: [],
@@ -44,29 +51,53 @@ export default function CreateProject({
 		templateDescription: "",
 		supervisorName: "",
 		category: "Residential",
+		questionnaire: initialQuestionnaire,
+		planGenerated: false,
 	};
 
 	const [currentStep, setCurrentStep] = useState(1);
+	const [questionnaireSubStep, setQuestionnaireSubStep] = useState(1);
 	const [projectData, setProjectData] =
 		useState<IProjectCreationData>(initialProjectData);
 	const [validationErrors, setValidationErrors] = useState<
 		Record<string, string>
 	>({});
 	const [customTemplates, setCustomTemplates] = useState<IProjectTemplate[]>(
-		[]
+		[],
+	);
+
+	const questionnaire: ProjectCreationQuestionnaire = useMemo(
+		() =>
+			projectData.questionnaire ?? {
+				...emptyQuestionnaire(),
+				name: projectData.name,
+				organisationId: projectData.organisationId,
+				supervisor: projectData.supervisor,
+				supervisorName: projectData.supervisorName,
+				location: projectData.location,
+				startDate: projectData.startDate,
+				endDate: projectData.endDate,
+			},
+		[projectData],
 	);
 
 	const selectedOrganisation = organisations.find(
-		(org) => org.id === projectData.organisationId
+		(org) => org.id === projectData.organisationId,
 	);
 
 	const supervisors: IOrganisationProfile[] = selectedOrganisation
 		? getOrganisationMembersFromStore(selectedOrganisation.id).filter(
-				(member) => member.memberInfo?.role === "Admin"
-		  )
-		: ([] as IOrganisationProfile[]); // Ensure it's typed as IOrganisationProfile[]
+				(member) => member.memberInfo?.role === "Admin",
+			)
+		: ([] as IOrganisationProfile[]);
 
-	const steps = ["Project Details", "Phases", "Tasks", "Review & Confirm"];
+	const steps = [
+		"Questionnaire",
+		"Review",
+		"Phases",
+		"Tasks",
+		"Review & confirm",
+	];
 	const totalSteps = steps.length;
 
 	return (
@@ -77,8 +108,8 @@ export default function CreateProject({
 						Create project
 					</h1>
 					<p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-						Set up details, phases, tasks, then review before
-						publishing.
+						Answer the questionnaire, review your answers, then edit
+						the generated plan before publishing.
 					</p>
 				</header>
 
@@ -88,31 +119,44 @@ export default function CreateProject({
 					setCurrentStep={setCurrentStep}
 					totalSteps={totalSteps}
 					projectData={projectData}
+					setProjectData={setProjectData}
 					setValidationErrors={setValidationErrors}
+					validationErrors={validationErrors}
+					questionnaireSubStep={questionnaireSubStep}
+					setQuestionnaireSubStep={setQuestionnaireSubStep}
+					questionnaire={questionnaire}
+					validateFullQuestionnaire={validateFullQuestionnaire}
 				/>
 
 				<div className="min-w-0">
 					{currentStep === 1 && (
-						<ProjectDetails
+						<ProjectQuestionnaire
 							projectData={projectData}
 							setProjectData={setProjectData}
 							organisations={organisations}
 							supervisors={supervisors}
 							validationErrors={validationErrors}
 							setValidationErrors={setValidationErrors}
+							subStep={questionnaireSubStep}
+							setSubStep={setQuestionnaireSubStep}
 						/>
 					)}
 
 					{currentStep === 2 && (
+						<QuestionnaireReviewStep questionnaire={questionnaire} />
+					)}
+
+					{currentStep === 3 && (
 						<Phases
 							projectData={projectData}
 							setProjectData={setProjectData}
 							customTemplates={customTemplates}
 							validationErrors={validationErrors}
 							setValidationErrors={setValidationErrors}
+							hideTemplatePicker={projectData.planGenerated === true}
 						/>
 					)}
-					{currentStep === 3 && (
+					{currentStep === 4 && (
 						<Tasks
 							projectData={projectData}
 							setProjectData={setProjectData}
@@ -121,7 +165,7 @@ export default function CreateProject({
 						/>
 					)}
 
-					{currentStep === 4 && (
+					{currentStep === 5 && (
 						<ReviewConfirm
 							projectData={projectData}
 							organisation={selectedOrganisation}

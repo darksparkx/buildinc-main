@@ -170,8 +170,10 @@ export function acceptProjectInvitation(request: IRequest) {
 	});
 }
 
-export function changeUserRole(id: string, projectId: string, newRole: string) {
-	updateProjectMember(id, projectId, {
-		role: newRole as role,
-	});
+export function changeUserRole(
+	id: string,
+	projectId: string,
+	updates: { role: role; canSeeBudget: boolean },
+) {
+	updateProjectMember(id, projectId, updates);
 }

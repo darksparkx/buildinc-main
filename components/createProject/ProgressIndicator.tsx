@@ -3,6 +3,8 @@ import { Button } from "@/components/base/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { IProjectCreationData } from "@/lib/types";
 import { cn } from "@/lib/functions/utils";
+import type { ProjectCreationQuestionnaire } from "@/lib/projectGeneration/types";
+import { applyGeneratedPlanToProject } from "@/lib/projectGeneration/applyGeneratedPlan";
 
 type ProgressIndicatorProps = {
 	currentStep: number;
@@ -10,121 +12,92 @@ type ProgressIndicatorProps = {
 	totalSteps: number;
 	setCurrentStep: Dispatch<SetStateAction<number>>;
 	projectData: IProjectCreationData;
+	setProjectData: Dispatch<SetStateAction<IProjectCreationData>>;
 	setValidationErrors: Dispatch<SetStateAction<Record<string, string>>>;
+	validationErrors?: Record<string, string>;
+	questionnaireSubStep?: number;
+	setQuestionnaireSubStep?: Dispatch<SetStateAction<number>>;
+	questionnaire?: ProjectCreationQuestionnaire;
+	validateFullQuestionnaire?: (
+		q: ProjectCreationQuestionnaire,
+	) => Record<string, string>;
 };
 
 const ProgressIndicator = ({
 	currentStep,
 	setCurrentStep,
 	projectData,
+	setProjectData,
 	steps,
 	totalSteps,
 	setValidationErrors,
+	validationErrors = {},
+	questionnaireSubStep = 5,
+	setQuestionnaireSubStep,
+	questionnaire,
+	validateFullQuestionnaire,
 }: ProgressIndicatorProps) => {
-	const validateStep = (step: number) => {
+	const validatePhasesAndTasks = (includeMaterials: boolean) => {
 		const errors: Record<string, string> = {};
-
-		if (step === 1) {
-			if (!projectData.name.trim())
-				errors.name = "Project name is required";
-			if (!projectData.description.trim())
-				errors.description = "Description is required";
-			if (!projectData.organisationId)
-				errors.organisation = "Organisation is required";
-			if (!projectData.supervisor)
-				errors.supervisor = "Supervisor is required";
-			if (!projectData.budget || projectData.budget <= 0)
-				errors.budget = "Budget is required";
-			if (!projectData.startDate)
-				errors.startDate = "Start date is required";
-			if (!projectData.endDate) errors.endDate = "End date is required";
-			if (
-				projectData.startDate &&
-				projectData.endDate &&
-				projectData.endDate <= projectData.startDate
-			)
-				errors.endDate = "End date must be after start date";
+		if (!projectData.phases || projectData.phases.length === 0) {
+			errors.phases = "At least one phase with tasks is required";
+			return errors;
 		}
+		projectData.phases.forEach((phase, pIdx) => {
+			const phaseBudget = Number(phase?.budget ?? 0);
+			if (!phase?.budget || phaseBudget <= 0) {
+				errors[`phase_${pIdx}_budget`] = `Phase ${pIdx + 1} budget is required`;
+			}
+			if (!phase.tasks || phase.tasks.length === 0) {
+				errors[`phase_${pIdx}_tasks`] = `Phase ${pIdx + 1} must have at least one task`;
+				return;
+			}
+			let tasksTotal = 0;
+			phase.tasks.forEach((task, tIdx) => {
+				const taskBudget = Number(task?.plannedBudget ?? 0);
+				if (!task?.plannedBudget || taskBudget <= 0) {
+					errors[`phase_${pIdx}_task_${tIdx}_budget`] =
+						`Task ${tIdx + 1} in phase ${pIdx + 1} requires a valid budget`;
+				}
+				tasksTotal += taskBudget;
+				if (includeMaterials) {
+					const materials = Array.isArray(task?.materials) ? task.materials : [];
+					const materialTotal = materials.reduce((sum, m) => {
+						return (
+							sum +
+							Number(m?.unitCost ?? 0) * Number(m?.plannedQuantity ?? 1)
+						);
+					}, 0);
+					if (taskBudget < materialTotal) {
+						errors.Error = `Task ${tIdx + 1} in phase ${pIdx + 1}: planned budget is below material cost`;
+					}
+				}
+			});
+			if (phaseBudget > 0 && tasksTotal > phaseBudget) {
+				errors[`phase_${pIdx + 1}`] = `Task budgets exceed phase ${pIdx + 1} budget`;
+			}
+		});
+		return errors;
+	};
 
-		if (step === 2) {
-			if (!projectData.phases || projectData.phases.length === 0)
-				errors.phases = "At least one phase with tasks is required";
+	const validateStep = (step: number) => {
+		let errors: Record<string, string> = {};
+
+		if (step === 1 && questionnaire && validateFullQuestionnaire) {
+			if (questionnaireSubStep < 5) {
+				errors.questionnaire = "Complete all 5 questionnaire steps (use Continue)";
+				setValidationErrors(errors);
+				return false;
+			}
+			errors = validateFullQuestionnaire(questionnaire);
 		}
 
 		if (step === 3) {
-			if (!projectData.phases || projectData.phases.length === 0) {
-				errors.phases = "At least one phase with tasks is required";
-			} else {
-				projectData.phases.forEach((phase, pIdx) => {
-					const phaseBudget = Number(phase?.budget ?? 0);
+			errors = { ...errors, ...validatePhasesAndTasks(false) };
+		}
 
-					if (!phase?.budget || phaseBudget <= 0) {
-						errors[`phase_${pIdx}_budget`] = `Phase ${
-							pIdx + 1
-						} budget is required`;
-					}
-
-					if (!phase.tasks || phase.tasks.length === 0) {
-						errors[`phase_${pIdx}_tasks`] = `Phase ${
-							pIdx + 1
-						} must have at least one task`;
-						return;
-					}
-
-					let tasksTotal = 0;
-					phase.tasks.forEach((task, tIdx) => {
-						const taskBudget = Number(task?.plannedBudget ?? 0);
-						if (!task?.plannedBudget || taskBudget <= 0) {
-							errors[
-								`phase_${pIdx}_task_${tIdx}_budget`
-							] = `Task ${tIdx + 1} in phase ${
-								pIdx + 1
-							} requires a valid budget`;
-						}
-						tasksTotal += taskBudget;
-					});
-
-					if (phaseBudget > 0 && tasksTotal > phaseBudget) {
-						errors[
-							`phase_${pIdx + 1}`
-						] = `Total task budgets (${tasksTotal.toLocaleString(
-							"en-IN"
-						)}) exceed phase budget (${phaseBudget.toLocaleString(
-							"en-IN"
-						)})`;
-					}
-				});
-			}
-			if (projectData.phases && projectData.phases.length > 0) {
-				projectData.phases.forEach((phase, pIdx) => {
-					phase?.tasks?.forEach((task, tIdx) => {
-						const taskBudget = Number(task?.plannedBudget ?? 0);
-						const materials = Array.isArray(task?.materials)
-							? task!.materials
-							: [];
-
-						const materialTotal = materials.reduce((sum, m) => {
-							const unitCost = Number(
-								m?.unitCost ?? m?.unitCost ?? 0
-							);
-							const qty = Number(m?.plannedQuantity ?? 1);
-							return sum + unitCost * qty;
-						}, 0);
-
-						if (taskBudget < materialTotal) {
-							errors[
-								`Error`
-							] = `Planned budget (${taskBudget.toLocaleString(
-								"en-IN"
-							)}) for task ${tIdx + 1} in phase ${
-								pIdx + 1
-							} exceeds total material cost (${materialTotal.toLocaleString(
-								"en-IN"
-							)})`;
-						}
-					});
-				});
-			}
+		if (step === 4) {
+			errors = { ...errors, ...validatePhasesAndTasks(true) };
 		}
 
 		setValidationErrors(errors);
@@ -133,17 +106,49 @@ const ProgressIndicator = ({
 
 	const nextStep = () => {
 		if (!validateStep(currentStep)) return;
+
+		if (currentStep === 2 && questionnaire) {
+			try {
+				const generated = applyGeneratedPlanToProject(questionnaire);
+				setProjectData((prev) => ({
+					...prev,
+					...generated,
+					questionnaire,
+					name: questionnaire.name,
+					description: questionnaire.description,
+					organisationId: questionnaire.organisationId,
+					supervisor: questionnaire.supervisor,
+					supervisorName: questionnaire.supervisorName,
+					location: questionnaire.location,
+					startDate: questionnaire.startDate,
+					endDate: questionnaire.endDate,
+					projectTypeId: questionnaire.projectTypeId,
+				}));
+			} catch (e) {
+				setValidationErrors({
+					generate:
+						e instanceof Error ? e.message : "Could not generate plan",
+				});
+				return;
+			}
+		}
+
 		if (currentStep < totalSteps) setCurrentStep(currentStep + 1);
 	};
 
 	const prevStep = () => {
+		if (currentStep === 1 && questionnaireSubStep > 1 && setQuestionnaireSubStep) {
+			setQuestionnaireSubStep(questionnaireSubStep - 1);
+			return;
+		}
 		if (currentStep > 1) setCurrentStep(currentStep - 1);
 	};
+
+	const prevDisabled = currentStep === 1 && questionnaireSubStep <= 1;
 
 	return (
 		<div className="space-y-6">
 			<nav aria-label="Create project steps" className="w-full">
-				{/* Single horizontal track: circles align with connecting bars */}
 				<div className="flex w-full items-center">
 					{steps.map((_, i) => {
 						const step = i + 1;
@@ -195,12 +200,23 @@ const ProgressIndicator = ({
 				</div>
 			</nav>
 
+			{validationErrors.questionnaire && currentStep === 1 && (
+				<p className="text-center text-sm text-destructive">
+					{validationErrors.questionnaire}
+				</p>
+			)}
+			{validationErrors.generate && currentStep === 2 && (
+				<p className="text-center text-sm text-destructive">
+					{validationErrors.generate}
+				</p>
+			)}
+
 			<div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-muted/30 px-3 py-3 ring-1 ring-border/40 sm:px-4">
 				<Button
 					variant="outline"
 					type="button"
 					onClick={prevStep}
-					disabled={currentStep === 1}
+					disabled={prevDisabled}
 					className="h-10 w-10 shrink-0 rounded-full border-slate-400/50 bg-slate-50 p-0 text-slate-700 shadow-sm ring-1 ring-slate-400/30 hover:bg-slate-100 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-800"
 					aria-label="Previous step"
 				>
@@ -211,6 +227,10 @@ const ProgressIndicator = ({
 					{steps[currentStep - 1]}
 					<span className="mt-0.5 block text-xs font-normal text-muted-foreground sm:mt-1">
 						Step {currentStep} of {totalSteps}
+						{currentStep === 1 && questionnaireSubStep < 5
+							? ` · Question ${questionnaireSubStep}/5`
+							: ""}
+						{currentStep === 2 ? " · Next builds your plan" : ""}
 					</span>
 				</p>
 
@@ -226,7 +246,9 @@ const ProgressIndicator = ({
 					aria-label={
 						currentStep === totalSteps
 							? "Continue on this step"
-							: "Next step"
+							: currentStep === 2
+								? "Generate plan and continue"
+								: "Next step"
 					}
 				>
 					<ArrowRight className="h-4 w-4" />

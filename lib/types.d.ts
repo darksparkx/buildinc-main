@@ -111,6 +111,11 @@ export interface IProjectDB {
 	location: string;
 	status: status;
 	category: category;
+	/** P4 building spec */
+	projectTypeId?: string | null;
+	totalSqft?: number | null;
+	budgetPerSqft?: number | null;
+	buildingSpecJson?: Record<string, unknown> | null;
 }
 
 export interface IPhaseDB {
@@ -219,6 +224,8 @@ export interface IProjectMemberDB {
 	projectId: string;
 	userId: string;
 	role: role;
+	/** P4.8 — grant budget/financial visibility on this project */
+	canSeeBudget?: boolean;
 }
 
 export interface IRequestDB {
@@ -374,6 +381,14 @@ export interface IProjectCreationData {
 	status: status;
 	category: category;
 	// members: IProjectMemberProfile[];
+
+	/** P4 questionnaire-driven create */
+	projectTypeId?: string;
+	questionnaire?: import("@/lib/projectGeneration/types").ProjectCreationQuestionnaire;
+	planGenerated?: boolean;
+	budgetPerSqft?: number;
+	totalSqft?: number;
+	buildingSpecJson?: string;
 
 	// Step 2: Phases and Tasks
 	selectedTemplate?: IProjectTemplate;

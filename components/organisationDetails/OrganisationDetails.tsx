@@ -47,6 +47,10 @@ function OrganisationWorkspace({
 	totalBudget,
 	totalSpent,
 	budgetUtilization,
+	totalSqft,
+	plannedPerSqft,
+	actualPerSqft,
+	showFinancials,
 	setChangeRole,
 	setChangeRoleUser,
 	setChangeRoleModal,
@@ -58,6 +62,10 @@ function OrganisationWorkspace({
 	totalBudget: number;
 	totalSpent: number;
 	budgetUtilization: number;
+	totalSqft: number;
+	plannedPerSqft: number | null;
+	actualPerSqft: number | null;
+	showFinancials: boolean;
 	setChangeRole: (v: string) => void;
 	setChangeRoleUser: (v: string) => void;
 	setChangeRoleModal: (v: boolean) => void;
@@ -91,6 +99,10 @@ function OrganisationWorkspace({
 				totalBudget={totalBudget}
 				totalSpent={totalSpent}
 				budgetUtilization={budgetUtilization}
+				showFinancials={showFinancials}
+				totalSqft={totalSqft}
+				plannedPerSqft={plannedPerSqft}
+				actualPerSqft={actualPerSqft}
 			/>
 
 			{showStatisticsTab ? (
@@ -147,6 +159,19 @@ export default function OrganisationDetails() {
 	const { totalBudget, totalSpent, budgetUtilization } =
 		organisationDetails(projects);
 
+	const totalSqft = projects.reduce(
+		(sum, p) => sum + (Number(p.totalSqft) || 0),
+		0,
+	);
+	const plannedPerSqft =
+		ownerShell && totalSqft > 0
+			? Math.round(totalBudget / totalSqft)
+			: null;
+	const actualPerSqft =
+		ownerShell && totalSqft > 0 && totalSpent > 0
+			? Math.round(totalSpent / totalSqft)
+			: null;
+
 	if (!organisation) {
 		return (
 			<div className="p-6 text-sm text-muted-foreground">
@@ -168,6 +193,10 @@ export default function OrganisationDetails() {
 						totalBudget={totalBudget}
 						totalSpent={totalSpent}
 						budgetUtilization={budgetUtilization}
+						totalSqft={totalSqft}
+						plannedPerSqft={plannedPerSqft}
+						actualPerSqft={actualPerSqft}
+						showFinancials={ownerShell}
 						setChangeRole={setChangeRole}
 						setChangeRoleUser={setChangeRoleUser}
 						setChangeRoleModal={setChangeRoleModal}

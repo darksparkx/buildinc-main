@@ -21,6 +21,7 @@ const Phases = ({
 	customTemplates,
 	validationErrors,
 	setValidationErrors,
+	hideTemplatePicker = false,
 }: {
 	projectData: IProjectCreationData;
 	setProjectData: React.Dispatch<React.SetStateAction<IProjectCreationData>>;
@@ -29,6 +30,7 @@ const Phases = ({
 	setValidationErrors: React.Dispatch<
 		React.SetStateAction<Record<string, string>>
 	>;
+	hideTemplatePicker?: boolean;
 }) => {
 	const { addPhase, getTotalPhaseBudget, handlePhaseDragEnd } =
 		phaseCreationFunctions();
@@ -36,11 +38,13 @@ const Phases = ({
 
 	return (
 		<div className="space-y-8">
-			<TemplateSelectModal
-				projectData={projectData}
-				setProjectData={setProjectData}
-				customTemplates={customTemplates}
-			/>
+			{!hideTemplatePicker && (
+				<TemplateSelectModal
+					projectData={projectData}
+					setProjectData={setProjectData}
+					customTemplates={customTemplates}
+				/>
+			)}
 
 			<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
 				<CardHeader className="space-y-4 pb-2">

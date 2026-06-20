@@ -10,7 +10,10 @@ import { Separator } from "@/components/base/ui/separator";
 import { TabsContent } from "@/components/base/ui/tabs";
 import { Badge } from "@/components/base/ui/badge";
 import { formatDate, RupeeIcon } from "@/lib/functions/utils";
+import { canViewProjectFinancials } from "@/lib/permissions/canViewProjectFinancials";
+import { getProjectType } from "@/lib/projectGeneration/projectTypes";
 import { getProjectMembersByProjectIdFromStore } from "@/lib/middleware/projectMembers";
+import { useProfileStore } from "@/lib/store/profileStore";
 import { IProject, ITask } from "@/lib/types";
 import {
 	CalendarRange,
@@ -57,6 +60,9 @@ export const Overview = ({
 	onSelectTask: (task: ITask) => void;
 	onViewBoard: () => void;
 }) => {
+	const profileId = useProfileStore((s) => s.profile?.id);
+	const showFinancials = canViewProjectFinancials(profileId, projectData);
+
 	const supervisor = getProjectMembersByProjectIdFromStore(
 		projectData.id
 	).find((m) => m.memberInfo?.role === "Supervisor");
@@ -66,6 +72,17 @@ export const Overview = ({
 	const spent = projectData.spent ?? 0;
 	const budgetUsed =
 		budget > 0 ? Math.round((spent / budget) * 100) : 0;
+	const totalSqft = projectData.totalSqft ?? 0;
+	const plannedPerSqft = projectData.budgetPerSqft ?? null;
+	const actualPerSqft =
+		totalSqft > 0 && spent > 0 ? Math.round(spent / totalSqft) : null;
+	const typeLabel =
+		(typeof projectData.buildingSpecJson?.projectTypeLabel === "string"
+			? projectData.buildingSpecJson.projectTypeLabel
+			: null) ??
+		(projectData.projectTypeId
+			? getProjectType(projectData.projectTypeId)?.label
+			: null);
 	const progress = Number.isFinite(projectData.progress)
 		? projectData.progress
 		: 0;
@@ -165,6 +182,20 @@ export const Overview = ({
 							<span className="text-muted-foreground">End</span>
 							<span className="font-medium tabular-nums">{endLabel}</span>
 						</div>
+						{typeLabel && (
+							<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+								<span className="text-muted-foreground">Project type</span>
+								<span className="font-medium">{typeLabel}</span>
+							</div>
+						)}
+						{totalSqft > 0 && (
+							<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+								<span className="text-muted-foreground">Built-up area</span>
+								<span className="font-medium tabular-nums">
+									{totalSqft.toLocaleString("en-IN")} sqft
+								</span>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
@@ -176,38 +207,67 @@ export const Overview = ({
 							</span>
 							<div>
 								<CardTitle className="text-lg sm:text-xl">
-									Progress & budget
+									{showFinancials ? "Progress & budget" : "Progress"}
 								</CardTitle>
 								<CardDescription>
-									Completion and spend vs budget
+									{showFinancials
+										? "Completion and spend vs budget"
+										: "Task completion for this project"}
 								</CardDescription>
 							</div>
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-4">
-						<div className="flex items-center justify-between gap-4 text-sm">
-							<span className="text-muted-foreground">Budget</span>
-							<span className="font-semibold tabular-nums">
-								{budget.toLocaleString("en-IN")}
-								<RupeeIcon />
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-4 text-sm">
-							<span className="text-muted-foreground">Spent</span>
-							<span className="font-semibold tabular-nums">
-								{spent.toLocaleString("en-IN")}
-								<RupeeIcon />
-							</span>
-						</div>
-						<div className="flex items-center justify-between gap-4 text-sm">
-							<span className="text-muted-foreground">Remaining</span>
-							<span className="font-semibold tabular-nums">
-								{Math.max(0, budget - spent).toLocaleString("en-IN")}
-								<RupeeIcon />
-							</span>
-						</div>
-
-						<Separator className="bg-border/60" />
+						{showFinancials && (
+							<>
+								<div className="flex items-center justify-between gap-4 text-sm">
+									<span className="text-muted-foreground">Budget</span>
+									<span className="font-semibold tabular-nums">
+										{budget.toLocaleString("en-IN")}
+										<RupeeIcon />
+									</span>
+								</div>
+								<div className="flex items-center justify-between gap-4 text-sm">
+									<span className="text-muted-foreground">Spent</span>
+									<span className="font-semibold tabular-nums">
+										{spent.toLocaleString("en-IN")}
+										<RupeeIcon />
+									</span>
+								</div>
+								<div className="flex items-center justify-between gap-4 text-sm">
+									<span className="text-muted-foreground">Remaining</span>
+									<span className="font-semibold tabular-nums">
+										{Math.max(0, budget - spent).toLocaleString("en-IN")}
+										<RupeeIcon />
+									</span>
+								</div>
+								{totalSqft > 0 && plannedPerSqft != null && (
+									<>
+										<div className="flex items-center justify-between gap-4 text-sm">
+											<span className="text-muted-foreground">
+												Planned ₹/sqft
+											</span>
+											<span className="font-semibold tabular-nums">
+												{plannedPerSqft.toLocaleString("en-IN")}
+												<RupeeIcon />
+											</span>
+										</div>
+										{actualPerSqft != null && (
+											<div className="flex items-center justify-between gap-4 text-sm">
+												<span className="text-muted-foreground">
+													Actual spend ₹/sqft
+												</span>
+												<span className="font-semibold tabular-nums">
+													{actualPerSqft.toLocaleString("en-IN")}
+													<RupeeIcon />
+												</span>
+											</div>
+										)}
+									</>
+								)}
+								<Separator className="bg-border/60" />
+							</>
+						)}
 
 						<div className="space-y-2">
 							<div className="flex items-center justify-between text-sm">
@@ -228,16 +288,18 @@ export const Overview = ({
 							/>
 						</div>
 
-						<div className="space-y-2">
-							<div className="flex justify-between text-sm">
-								<span className="text-muted-foreground">Budget used</span>
-								<span className="tabular-nums font-medium">{budgetUsed}%</span>
+						{showFinancials && (
+							<div className="space-y-2">
+								<div className="flex justify-between text-sm">
+									<span className="text-muted-foreground">Budget used</span>
+									<span className="tabular-nums font-medium">{budgetUsed}%</span>
+								</div>
+								<Progress
+									value={Math.min(100, Math.max(0, budgetUsed))}
+									className="h-2.5 bg-muted"
+								/>
 							</div>
-							<Progress
-								value={Math.min(100, Math.max(0, budgetUsed))}
-								className="h-2.5 bg-muted"
-							/>
-						</div>
+						)}
 					</CardContent>
 				</Card>
 			</div>

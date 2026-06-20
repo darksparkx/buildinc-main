@@ -21,7 +21,7 @@ NEXT:
             + show project progress and tasks
 
         CreateProject:
-            - save custom templates in DB + guided building-spec generator → see (P4) items 3–7
+            + questionnaire → review → auto-generate → edit → publish (P4 core)
 
         projectDetails:
             + fix used budget not showing
@@ -41,7 +41,7 @@ NEXT:
 
     + add laoding to buttons: DONE
     + add toasts everywhere: DONE
-    - material costing calculator → (P4).11 + (P5).6
+    - material costing calculator → (P4).10 + (P5).6
     when approving a task for completion, first check if any requests are left automatically
     dont showe budget to supervisor or anyone else othervthan admin
     - adding budget per sq ft → see (P4) Intelligent project setup (building spec + auto budget)
@@ -91,7 +91,7 @@ TODO:
 /**/
 Master list:
     Cross-reference: granular stubs remain above (`NEXT`, `TODO`, `billing + beta`)—merge duplicates against this list as you complete work.
-    Sequential note: finish (P3) CSV round-trip (item 10), then (P4) intelligent project setup before (P5) vendors. Budget per sqft lives in (P4), not P3.
+    Sequential note: finish (P3) CSV round-trip (item 10); P4 done except optional budget RLS (P4.8)—then (P5) vendors. Budget per sqft is (P4), not P3.
 
     + (P1) Collaboration, workflow, and communication
         + 1. Unified in-app inbox / notification center (invites, approvals, assignments, completions, rejections)—backed by real queries, not demo UI.
@@ -128,19 +128,17 @@ Master list:
         + 9. Surfaces for project progress and linked tasks on project list/detail (progress bar + overdue on list; linked tasks on Overview).
         - 10. Statistics CSV round-trip: export file re-importable (project + phase sections at minimum); import preview/validation; document format; no dependency on (P4)—current gap is import only accepts project_id/budget/spent while export includes overview/materials/approvals/phases.
 
-    (P4) Intelligent project setup, estimating, and auto-provisioning
-        Scope: user describes the building (floors, sqft, typology); app generates phases, tasks, materials, and budget from admin rate card—includes budget per sqft as a derived metric. Do this phase before treating ₹/sqft as a standalone reporting feature.
-        1. Data model: structured building spec on project (floor count, total sqft, archetype e.g. commercial center / residential, units per floor such as 2 flats per floor); store `total_sqft` and derived `budget_per_sqft`; org/subscriber estimator rate card (material unit costs, labour rates by trade, optional ₹/sqft benchmarks by project type).
-        2. Admin first-run onboarding: on subscriber/org initiation, collect default material costs, labour rates, and optional benchmark ₹/sqft by project type—persist to settings; editable later in admin Settings (single source of truth with (P5).7 material averages—do not fork two cost tables).
-        3. Create project — building spec step: capture floors, total sqft, project type/layout (commercial, multi-flat per floor, etc.); validation; persist spec before generation.
-        4. Generation engine: from building spec + rate card + rules/templates → auto-create phases, tasks, materials (planned qty + unit cost), planned task/phase budgets, rolled-up project budget, and budget per sqft.
-        5. Create project UX: new guided path (“Estimate & generate”) alongside existing manual template flow; review step shows full generated breakdown (phases, tasks, materials, budget, ₹/sqft) with edit/tweak before commit.
-        6. Persist on create: write generated phases, tasks, materials, and budgets through the same create pipeline as today’s manual flow (transactional, rollback on failure).
-        7. Save generated plans as org templates in DB and list them in the create-project template picker (replaces ad-hoc JSON-only templates)—see also (P21).6.
-        8. Surface budget per sqft: org overview, project overview/detail, and statistics when `total_sqft` is set—planned budget/sqft and actual spend/sqft where spend exists.
-        9. Role visibility: budget totals and ₹/sqft owner/admin-only; supervisors and field roles do not see financial totals (align (P6).10 UI + RLS with NEXT “don’t show budget to supervisor”).
-        10. Statistics & CSV: when spec + sqft exist, include budget/sqft columns in owner exports; optional import of spec/sqft on Enterprise (extends (P3).10 round-trip).
-        11. Integrate rate card with in-product material costing calculator ((P5).6) and vendor last-paid hints ((P5).5) so estimates stay consistent with procurement flows.
+    + (P4) Intelligent project setup — questionnaire-only create (shipped core)
+        Flow: 5-step questionnaire → review → auto-generate on Next → edit phases/tasks → publish. Budget/₹/sqft from generation. Catalog + rule packs: `lib/projectGeneration/`.
+        + 1. Data model: `project_building_spec` (JSON or columns) storing full questionnaire answers + derived fields (`total_sqft`, `budget_per_sqft`); snapshot answers on project for audit/regenerate; org/subscriber estimator rate card (material unit costs, labour by trade, ₹/sqft benchmarks by archetype). — migration `11`/`12`, types, `addProject` wiring
+        + 2. Admin first-run onboarding: subscriber/org must complete rate card before first project create (or inline wizard step 0)—editable in Settings; single source of truth with (P5).7 (no duplicate cost tables). — Settings → Estimator tab + `estimator_rate_cards` (defaults OK without row)
+        + 3. Questionnaire UI: 5-step wizard (type → essentials → size → scope → targets); validation per step; progress indicator; conditional fields from `projectTypeId`; store in `ProjectCreationQuestionnaire` type until generate runs.
+        + 4. Generation engine: `projectTypeId + answers + rate card` → rule pack (24 full + stub fallback for Priority B) → `IPhaseTemplate[]` with tasks, materials, planned budgets; compute `budget`, `budget_per_sqft`; regen warns overwrites manual edits. Implement rule packs as data (JSON/TS modules per type), not one-off UI logic.
+        + 5. Wire create-project page: outer flow = Questionnaire (steps 1–5) → Review → auto-generate on Next → Edit phases/tasks → Review; remove old Details/Phases/Tasks order; gate Edit/Review until generation succeeded.
+        + 6. Persist on create: transactional create of project (+ building spec columns), phases, tasks, materials from generated plan (reuse `ReviewConfirm` / `projectCreation` after edits).
+        + 7. Surface budget per sqft on org/project overview and statistics when `total_sqft` set (planned + actual spend/sqft).
+        + 8. Role visibility: budget via `canSeeBudget` on project members + `projects_app`/`phases_app`/`tasks_app`/`materials_app` read views (migration `13`); UI `canViewProjectFinancials`
+        + 9. Statistics & CSV: sqft and budget/sqft columns when spec exists (extends (P3).10).
 
     (P5) Vendors, procurement, and field alignment
         1. Vendors directory (contact, categories, default terms).
@@ -287,7 +285,7 @@ Master list:
         3. Fix nav duplication / consistency (`navitems.ts` duplicate Settings entries).
         4. Align Statistics nav visibility with owner shell and future tier rules.
         5. Project details: fix used budget not showing (admin backlog).
-        6. Create Project: save custom templates in DB and list them in the template picker (admin backlog).
+        6. Create Project: save generated plans as org templates (rule packs); not a manual template picker at create.
         7. Project details: ship complete Settings tab (admin backlog).
         8. Admin Settings: finish remaining screens (overlap with estimator rate card—see (P4).2 and (P5).7).
         9. Vendors admin area: implement end-to-end (screens + API + RLS)—full scope under (P5).

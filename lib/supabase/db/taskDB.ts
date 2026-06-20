@@ -9,7 +9,7 @@ export const taskDB = {
 	// Gets tasks for a phase
 	async getPhaseTasks(phaseId: string) {
 		const { data, error } = await supabase
-			.from("tasks")
+			.from("tasks_app")
 			.select("*")
 			.eq("phaseId", phaseId)
 			.order("order", { ascending: true });
@@ -21,7 +21,7 @@ export const taskDB = {
 	// Gets tasks assigned to a user
 	async getUserTasks(userId: string) {
 		const { data, error } = await supabase
-			.from("tasks")
+			.from("tasks_app")
 			.select("*")
 			.eq("assignedTo", userId);
 
@@ -32,7 +32,7 @@ export const taskDB = {
 	// Gets a single task by its ID
 	async getTask(id: string) {
 		const { data, error } = await supabase
-			.from("tasks")
+			.from("tasks_app")
 			.select("*")
 			.eq("id", id)
 			.single();

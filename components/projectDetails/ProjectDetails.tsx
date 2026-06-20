@@ -11,6 +11,7 @@ import {
 	CardTitle,
 } from "@/components/base/ui/card";
 import { Tabs } from "@/components/base/ui/tabs";
+import { canViewProjectFinancials } from "@/lib/permissions/canViewProjectFinancials";
 import { RupeeIcon } from "@/lib/functions/utils";
 import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import { getProjectMembersByProjectIdFromStore } from "@/lib/middleware/projectMembers";
@@ -88,6 +89,7 @@ function ProjectWorkspace({
 	setChangeRoleModal,
 	setChangeRoleUser,
 	setChangeRoleId,
+	setChangeRoleCanSeeBudget,
 	setIsTaskDetailOpen,
 	setSelectedTask,
 	showStatisticsTab,
@@ -100,6 +102,7 @@ function ProjectWorkspace({
 	setChangeRoleModal: Dispatch<SetStateAction<boolean>>;
 	setChangeRoleUser: Dispatch<SetStateAction<string>>;
 	setChangeRoleId: Dispatch<SetStateAction<string>>;
+	setChangeRoleCanSeeBudget: Dispatch<SetStateAction<boolean>>;
 	setIsTaskDetailOpen: Dispatch<SetStateAction<boolean>>;
 	setSelectedTask: Dispatch<SetStateAction<ITask | null>>;
 	showStatisticsTab: boolean;
@@ -153,6 +156,7 @@ function ProjectWorkspace({
 				setChangeRoleModal={setChangeRoleModal}
 				setChangeRoleUser={setChangeRoleUser}
 				setChangeRoleId={setChangeRoleId}
+				setChangeRoleCanSeeBudget={setChangeRoleCanSeeBudget}
 			/>
 			<ProjectSettings
 				project={projectData}
@@ -167,6 +171,7 @@ export default function ProjectDetails() {
 	const [changeRoleUser, setChangeRoleUser] = useState<string>("");
 	const [changeRole, setChangeRole] = useState<string>("");
 	const [changeRoleId, setChangeRoleId] = useState<string>("");
+	const [changeRoleCanSeeBudget, setChangeRoleCanSeeBudget] = useState(false);
 	const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
 	const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
 	const [selectedTask, setSelectedTask] = useState<ITask | null>(null);
@@ -193,6 +198,11 @@ export default function ProjectDetails() {
 		return <LoadingSpinner />;
 	}
 
+	const showBudgetGrant = canViewProjectFinancials(
+		currentUserId,
+		projectData,
+	);
+
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
 			<div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 sm:px-6 sm:pb-12 sm:pt-6">
@@ -216,6 +226,7 @@ export default function ProjectDetails() {
 						setChangeRoleModal={setChangeRoleModal}
 						setChangeRoleUser={setChangeRoleUser}
 						setChangeRoleId={setChangeRoleId}
+						setChangeRoleCanSeeBudget={setChangeRoleCanSeeBudget}
 						setIsTaskDetailOpen={setIsTaskDetailOpen}
 						setSelectedTask={setSelectedTask}
 						showStatisticsTab={ownerShell}
@@ -243,8 +254,10 @@ export default function ProjectDetails() {
 				onOpenChange={setChangeRoleModal}
 				user={changeRoleUser}
 				originalRole={changeRole}
+				originalCanSeeBudget={changeRoleCanSeeBudget}
 				projectId={projectData.id}
 				id={changeRoleId}
+				showBudgetGrant={showBudgetGrant}
 			/>
 		</div>
 	);
@@ -322,6 +335,8 @@ const Summary = ({
 	projectData: IProject;
 	teamMembers: IProjectProfile[];
 }) => {
+	const profileId = useProfileStore((s) => s.profile?.id);
+	const showFinancials = canViewProjectFinancials(profileId, projectData);
 	const budget = projectData.budget ?? 0;
 	const spent = projectData.spent ?? 0;
 	const progress = Number.isFinite(projectData.progress)
@@ -332,38 +347,42 @@ const Summary = ({
 
 	return (
 		<div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4">
-			<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-					<CardTitle className="text-sm font-medium text-muted-foreground">
-						Budget
-					</CardTitle>
-					<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20">
-						<IndianRupee className="h-5 w-5" aria-hidden />
-					</span>
-				</CardHeader>
-				<CardContent>
-					<div className="text-2xl font-bold tabular-nums">
-						{budget.toLocaleString("en-IN")}
-						<RupeeIcon />
-					</div>
-				</CardContent>
-			</Card>
-			<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
-				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-					<CardTitle className="text-sm font-medium text-muted-foreground">
-						Budget spent
-					</CardTitle>
-					<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/25">
-						<IndianRupee className="h-5 w-5" aria-hidden />
-					</span>
-				</CardHeader>
-				<CardContent>
-					<div className="text-2xl font-bold tabular-nums">
-						{spent.toLocaleString("en-IN")}
-						<RupeeIcon />
-					</div>
-				</CardContent>
-			</Card>
+			{showFinancials && (
+				<>
+					<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium text-muted-foreground">
+								Budget
+							</CardTitle>
+							<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/20">
+								<IndianRupee className="h-5 w-5" aria-hidden />
+							</span>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold tabular-nums">
+								{budget.toLocaleString("en-IN")}
+								<RupeeIcon />
+							</div>
+						</CardContent>
+					</Card>
+					<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
+						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+							<CardTitle className="text-sm font-medium text-muted-foreground">
+								Budget spent
+							</CardTitle>
+							<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 ring-1 ring-amber-500/25">
+								<IndianRupee className="h-5 w-5" aria-hidden />
+							</span>
+						</CardHeader>
+						<CardContent>
+							<div className="text-2xl font-bold tabular-nums">
+								{spent.toLocaleString("en-IN")}
+								<RupeeIcon />
+							</div>
+						</CardContent>
+					</Card>
+				</>
+			)}
 			<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
 				<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 					<CardTitle className="text-sm font-medium text-muted-foreground">

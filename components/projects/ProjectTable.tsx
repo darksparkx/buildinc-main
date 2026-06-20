@@ -17,6 +17,7 @@ import {
 } from "@/components/base/ui/table";
 import { Badge } from "@/components/base/ui/badge";
 import { RupeeIcon } from "@/lib/functions/utils";
+import { canViewProjectFinancials } from "@/lib/permissions/canViewProjectFinancials";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { IProject } from "@/lib/types";
 import { ChevronRight, FolderOpen, MapPin } from "lucide-react";
@@ -28,6 +29,7 @@ import { ProjectProgressDisplay } from "./ProjectProgressDisplay";
 type Props = {
 	filteredProjects: IProject[];
 	admin: boolean;
+	profileId?: string;
 	projectTotalCount: number;
 	hasActiveFilters: boolean;
 };
@@ -58,16 +60,18 @@ function statusVariant(
 function ProjectMobileRow({
 	project,
 	admin,
+	showFinancials,
 	orgName,
 	onOpen,
 }: {
 	project: IProject;
 	admin: boolean;
+	showFinancials: boolean;
 	orgName: string;
 	onOpen: () => void;
 }) {
 	const pct =
-		project.budget && project.budget > 0
+		showFinancials && project.budget && project.budget > 0
 			? Math.round(((project.spent ?? 0) / project.budget) * 100)
 			: 0;
 
@@ -99,10 +103,12 @@ function ProjectMobileRow({
 				{admin ? (
 					<div className="mt-3 space-y-2">
 						<ProjectProgressDisplay project={project} />
-						<p className="text-xs text-muted-foreground tabular-nums">
-							Budget {project.budget?.toLocaleString("en-IN") ?? "0"}
-							<RupeeIcon /> · {pct}% spent
-						</p>
+						{showFinancials ? (
+							<p className="text-xs text-muted-foreground tabular-nums">
+								Budget {project.budget?.toLocaleString("en-IN") ?? "0"}
+								<RupeeIcon /> · {pct}% spent
+							</p>
+						) : null}
 					</div>
 				) : (
 					<p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
@@ -121,6 +127,7 @@ function ProjectMobileRow({
 const ProjectTable = ({
 	filteredProjects,
 	admin,
+	profileId,
 	projectTotalCount,
 	hasActiveFilters,
 }: Props) => {
@@ -158,6 +165,10 @@ const ProjectTable = ({
 									<ProjectMobileRow
 										project={project}
 										admin={admin}
+										showFinancials={canViewProjectFinancials(
+											profileId,
+											project,
+										)}
 										orgName={
 											project.orgId
 												? orgNameById[project.orgId] ?? ""
@@ -200,11 +211,17 @@ const ProjectTable = ({
 								</TableHeader>
 								<TableBody>
 									{filteredProjects.map((project) => {
+										const showFinancials = canViewProjectFinancials(
+											profileId,
+											project,
+										);
 										const pct =
-											project.budget && project.budget > 0
+											showFinancials &&
+											project.budget &&
+											project.budget > 0
 												? Math.round(
-														((project.spent ?? 0) / project.budget) * 100
-												  )
+														((project.spent ?? 0) / project.budget) * 100,
+													)
 												: 0;
 										return (
 											<TableRow
@@ -239,17 +256,23 @@ const ProjectTable = ({
 															/>
 														</TableCell>
 														<TableCell className="text-center">
-															<div className="space-y-0.5">
-																<p className="font-medium tabular-nums">
-																	{project.budget?.toLocaleString("en-IN")}
-																	<RupeeIcon />
-																</p>
-																<p className="text-xs text-muted-foreground tabular-nums">
-																	Spent{" "}
-																	{project.spent?.toLocaleString("en-IN")}
-																	<RupeeIcon /> ({pct}%)
-																</p>
-															</div>
+															{showFinancials ? (
+																<div className="space-y-0.5">
+																	<p className="font-medium tabular-nums">
+																		{project.budget?.toLocaleString("en-IN")}
+																		<RupeeIcon />
+																	</p>
+																	<p className="text-xs text-muted-foreground tabular-nums">
+																		Spent{" "}
+																		{project.spent?.toLocaleString("en-IN")}
+																		<RupeeIcon /> ({pct}%)
+																	</p>
+																</div>
+															) : (
+																<span className="text-muted-foreground">
+																	—
+																</span>
+															)}
 														</TableCell>
 														<TableCell className="pr-4 text-center tabular-nums text-muted-foreground">
 															<span className="text-foreground font-medium">

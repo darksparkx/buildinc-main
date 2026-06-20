@@ -6,15 +6,23 @@ type Props = {
 	totalProjects: number;
 	activeProjects: number;
 	totalBudget: number;
+	showBudget?: boolean;
 };
 
 const ProjectStatistics = ({
 	totalProjects,
 	activeProjects,
 	totalBudget,
+	showBudget = true,
 }: Props) => {
 	return (
-		<div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+		<div
+			className={
+				showBudget
+					? "grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
+					: "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
+			}
+		>
 			<SummaryCard
 				className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm"
 				title="Total projects"
@@ -35,21 +43,23 @@ const ProjectStatistics = ({
 					</span>
 				}
 			/>
-			<SummaryCard
-				className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm"
-				title="Total budget"
-				content={
-					<span className="inline-flex items-baseline gap-0.5 tabular-nums">
-						{totalBudget.toLocaleString("en-IN")}
-						<RupeeIcon />
-					</span>
-				}
-				icon={
-					<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/15 text-secondary ring-1 ring-secondary/25">
-						<IndianRupee className="h-5 w-5" aria-hidden />
-					</span>
-				}
-			/>
+			{showBudget ? (
+				<SummaryCard
+					className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm"
+					title="Total budget"
+					content={
+						<span className="inline-flex items-baseline gap-0.5 tabular-nums">
+							{totalBudget.toLocaleString("en-IN")}
+							<RupeeIcon />
+						</span>
+					}
+					icon={
+						<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary/15 text-secondary ring-1 ring-secondary/25">
+							<IndianRupee className="h-5 w-5" aria-hidden />
+						</span>
+					}
+				/>
+			) : null}
 		</div>
 	);
 };

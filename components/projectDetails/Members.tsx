@@ -40,6 +40,7 @@ export const Members = ({
 	setChangeRoleModal,
 	setChangeRoleUser,
 	setChangeRoleId,
+	setChangeRoleCanSeeBudget,
 }: {
 	members: IProjectProfile[];
 	organisationMembers: IOrganisationProfile[];
@@ -50,6 +51,7 @@ export const Members = ({
 	setChangeRoleModal: (open: boolean) => void;
 	setChangeRoleUser: (user: string) => void;
 	setChangeRoleId: (role: string) => void;
+	setChangeRoleCanSeeBudget: (value: boolean) => void;
 }) => {
 	const [page, setPage] = useState(1);
 
@@ -67,6 +69,7 @@ export const Members = ({
 		setChangeRoleUser(userId);
 		setChangeRoleId(id || "");
 		setChangeRole(currentRole);
+		setChangeRoleCanSeeBudget(member.memberInfo?.canSeeBudget === true);
 		setChangeRoleModal(true);
 	};
 
@@ -120,6 +123,11 @@ export const Members = ({
 													<span className="rounded-md bg-secondary/15 px-2 py-0.5 font-medium text-secondary-foreground">
 														{member.memberInfo?.role}
 													</span>
+													{member.memberInfo?.canSeeBudget ? (
+														<span className="rounded-md bg-emerald-500/10 px-2 py-0.5 font-medium text-emerald-800 dark:text-emerald-300">
+															Budget access
+														</span>
+													) : null}
 													<span className="tabular-nums">
 														Joined{" "}
 														{member.memberInfo?.joinedAt
@@ -164,6 +172,7 @@ export const Members = ({
 										<TableRow className="border-border/50 hover:bg-transparent">
 											<TableHead className="pl-4">Name</TableHead>
 											<TableHead className="text-center">Role</TableHead>
+											<TableHead className="text-center">Budget</TableHead>
 											<TableHead>Email</TableHead>
 											<TableHead className="text-center">Joined</TableHead>
 											<TableHead className="w-[70px] pr-4 text-right">
@@ -184,6 +193,9 @@ export const Members = ({
 													<span className="inline-flex rounded-md bg-muted/80 px-2 py-0.5 text-xs font-medium">
 														{member.memberInfo?.role}
 													</span>
+												</TableCell>
+												<TableCell className="text-center text-xs text-muted-foreground">
+													{member.memberInfo?.canSeeBudget ? "Yes" : "No"}
 												</TableCell>
 												<TableCell className="max-w-[220px] truncate text-muted-foreground">
 													{member.email}

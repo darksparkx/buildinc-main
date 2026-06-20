@@ -21,6 +21,8 @@ export type OwnerStatisticsSnapshot = {
 	totalTaskSpent: number;
 	taskSpendVsPlannedPercent: number | null;
 	pendingApprovalCount: number;
+	/** Sum of built-up sqft across projects with spec (P4). */
+	totalBuiltUpSqft: number;
 	timeRange: StatisticsTimeRange;
 };
 
@@ -42,7 +44,28 @@ export type ProjectStatisticRow = {
 	pendingApprovals: number;
 	completionsInPeriod: number;
 	completionsPreviousPeriod: number;
+	totalSqft: number;
+	plannedBudgetPerSqft: number | null;
+	actualSpendPerSqft: number | null;
 };
+
+function projectSqftMetrics(p: IProject): {
+	totalSqft: number;
+	plannedBudgetPerSqft: number | null;
+	actualSpendPerSqft: number | null;
+} {
+	const totalSqft = Number(p.totalSqft) > 0 ? Number(p.totalSqft) : 0;
+	const plannedBudgetPerSqft =
+		totalSqft > 0 && p.budgetPerSqft != null && p.budgetPerSqft > 0
+			? Math.round(p.budgetPerSqft)
+			: totalSqft > 0 && (p.budget ?? 0) > 0
+				? Math.round((p.budget ?? 0) / totalSqft)
+				: null;
+	const spent = p.spent ?? 0;
+	const actualSpendPerSqft =
+		totalSqft > 0 && spent > 0 ? Math.round(spent / totalSqft) : null;
+	return { totalSqft, plannedBudgetPerSqft, actualSpendPerSqft };
+}
 
 /** Snapshot KPIs from hydrated client stores (all-time, current session data). */
 export function computeOwnerStatisticsSnapshot(
@@ -101,6 +124,11 @@ export function computeOwnerStatisticsSnapshot(
 	const pendingApprovalCount = requests.filter((r) => r.status === "Pending")
 		.length;
 
+	const totalBuiltUpSqft = projectList.reduce(
+		(sum, p) => sum + projectSqftMetrics(p).totalSqft,
+		0,
+	);
+
 	return {
 		projectCount,
 		activeProjectCount,
@@ -117,6 +145,7 @@ export function computeOwnerStatisticsSnapshot(
 		totalTaskSpent,
 		taskSpendVsPlannedPercent,
 		pendingApprovalCount,
+		totalBuiltUpSqft,
 		timeRange,
 	};
 }
@@ -177,6 +206,8 @@ export function computeProjectStatisticRows(
 		const { current: completionsInPeriod, previous: completionsPreviousPeriod } =
 			countPeriodCompletions(pt, timeRange, now);
 
+		const sqft = projectSqftMetrics(p);
+
 		rows.push({
 			projectId: p.id,
 			name: p.name,
@@ -195,6 +226,9 @@ export function computeProjectStatisticRows(
 			pendingApprovals: pendingByProject.get(p.id) ?? 0,
 			completionsInPeriod,
 			completionsPreviousPeriod,
+			totalSqft: sqft.totalSqft,
+			plannedBudgetPerSqft: sqft.plannedBudgetPerSqft,
+			actualSpendPerSqft: sqft.actualSpendPerSqft,
 		});
 	}
 

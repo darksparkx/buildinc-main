@@ -36,7 +36,7 @@ import {
 import { cn, RupeeIcon } from "@/lib/functions/utils";
 import { deleteMaterialPricing } from "@/lib/middleware/materialPricing";
 import { useProfileStore } from "@/lib/store/profileStore";
-import { LayoutGrid, Palette, Settings2, Trash2, User } from "lucide-react";
+import { Calculator, LayoutGrid, Palette, Settings2, Trash2, User } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useMaterialPricingStore } from "@/lib/store/materialPricingStore";
@@ -45,6 +45,8 @@ import { SUPPORT_EMAIL, supportMailto } from "@/lib/constants/contact";
 import { AccountSettingsCard } from "./AccountSettingsCard";
 import { AppearanceSettingsCard } from "./AppearanceSettingsCard";
 import { BillingSettingsCard } from "./BillingSettingsCard";
+import { EstimatorRateCardCard } from "./EstimatorRateCardCard";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 
 export default function Settings() {
 	const profile = useProfileStore((s) => s.profile);
@@ -61,6 +63,8 @@ export default function Settings() {
 	};
 
 	if (!profile) return null;
+
+	const showEstimator = useUsesOwnerShell(profile);
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col">
@@ -102,6 +106,9 @@ export default function Settings() {
 						triggers={[
 							{ value: "account", label: "Account" },
 							{ value: "appearance", label: "Appearance" },
+							...(showEstimator
+								? [{ value: "estimator" as const, label: "Estimator" }]
+								: []),
 							{ value: "materials", label: "Materials" },
 						]}
 					/>
@@ -124,6 +131,18 @@ export default function Settings() {
 						</div>
 						<AppearanceSettingsCard />
 					</TabsContent>
+
+					{showEstimator && (
+						<TabsContent value="estimator" className="mt-0 space-y-4">
+							<div className="flex items-center gap-2 text-muted-foreground lg:hidden">
+								<Calculator className="h-4 w-4 shrink-0" aria-hidden />
+								<span className="text-sm font-medium text-foreground">
+									Estimator
+								</span>
+							</div>
+							<EstimatorRateCardCard />
+						</TabsContent>
+					)}
 
 					<TabsContent value="materials" className="mt-0 space-y-4">
 						<div className="flex items-center gap-2 text-muted-foreground lg:hidden">

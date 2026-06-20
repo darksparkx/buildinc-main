@@ -70,6 +70,7 @@ export default function ProjectStatisticsTable({
 	timeRange,
 }: Props) {
 	const periodLabel = periodColumnLabel(timeRange);
+	const showSqft = rows.some((r) => r.totalSqft > 0);
 	if (rows.length === 0) {
 		return (
 			<p className="rounded-xl border border-border/60 bg-muted/15 px-4 py-8 text-center text-sm text-muted-foreground ring-1 ring-border/40">
@@ -105,6 +106,11 @@ export default function ProjectStatisticsTable({
 						<TableHead className="whitespace-nowrap text-right hidden md:table-cell">
 							{periodLabel}
 						</TableHead>
+						{showSqft ? (
+							<TableHead className="whitespace-nowrap text-right hidden xl:table-cell">
+								₹/sqft
+							</TableHead>
+						) : null}
 						<TableHead className="whitespace-nowrap text-right hidden lg:table-cell">
 							Budget use
 						</TableHead>
@@ -224,6 +230,30 @@ export default function ProjectStatisticsTable({
 										</span>
 									)}
 								</TableCell>
+								{showSqft ? (
+									<TableCell className="text-right align-top tabular-nums hidden xl:table-cell">
+										{row.totalSqft > 0 ? (
+											<span className="inline-flex flex-col items-end gap-0.5">
+												<span>
+													{row.plannedBudgetPerSqft != null
+														? `${row.plannedBudgetPerSqft.toLocaleString("en-IN")} planned`
+														: "—"}
+												</span>
+												{row.actualSpendPerSqft != null ? (
+													<span className="text-[11px] font-normal text-muted-foreground">
+														{row.actualSpendPerSqft.toLocaleString("en-IN")}{" "}
+														actual
+													</span>
+												) : null}
+												<span className="text-[11px] font-normal text-muted-foreground">
+													{row.totalSqft.toLocaleString("en-IN")} sqft
+												</span>
+											</span>
+										) : (
+											<span className="text-muted-foreground">—</span>
+										)}
+									</TableCell>
+								) : null}
 								<TableCell
 									className="text-right align-top tabular-nums hidden lg:table-cell"
 									title={budgetTitle}

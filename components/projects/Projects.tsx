@@ -17,6 +17,8 @@ import ProjectMemberRequests from "./ProjectMemberRequests";
 import ProjectStatistics from "./ProjectStatistics";
 import ProjectTable from "./ProjectTable";
 import { getProjectProgress } from "@/lib/functions/base";
+import { canViewProjectFinancials } from "@/lib/permissions/canViewProjectFinancials";
+import { useProfileStore } from "@/lib/store/profileStore";
 
 type StatusFilter =
 	| "All"
@@ -39,10 +41,17 @@ export default function Projects({
 }) {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
+	const profileId = useProfileStore((s) => s.profile?.id);
 
 	const totalProjects = projects.length;
 	const activeProjects = projects.filter((p) => p.status === "Active").length;
-	const totalBudget = projects.reduce((sum, p) => sum + (p.budget ?? 0), 0);
+	const totalBudget = projects.reduce((sum, p) => {
+		if (!canViewProjectFinancials(profileId, p)) return sum;
+		return sum + (p.budget ?? 0);
+	}, 0);
+	const showBudgetSummary = projects.some((p) =>
+		canViewProjectFinancials(profileId, p),
+	);
 
 	const filteredProjects = useMemo(() => {
 		const q = searchTerm.trim().toLowerCase();
@@ -98,6 +107,7 @@ export default function Projects({
 							totalProjects={totalProjects}
 							activeProjects={activeProjects}
 							totalBudget={totalBudget}
+							showBudget={showBudgetSummary}
 						/>
 					)}
 
@@ -113,6 +123,7 @@ export default function Projects({
 				<ProjectTable
 					filteredProjects={filteredProjects}
 					admin={admin}
+					profileId={profileId}
 					projectTotalCount={projects.length}
 					hasActiveFilters={
 						searchTerm.trim() !== "" || statusFilter !== "All"

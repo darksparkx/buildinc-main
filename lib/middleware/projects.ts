@@ -7,6 +7,7 @@ import { useEntitlementsStore } from "@/lib/store/entitlementsStore";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useProjectStore } from "@/lib/store/projectStore";
+import { buildingSpecFieldsFromCreation } from "@/lib/projectGeneration/projectDbFields";
 import {
 	IProject,
 	IProjectCreationData,
@@ -48,6 +49,7 @@ export async function addProject(project: IProjectCreationData) {
 			location: project.location,
 			status: project.status,
 			category: project.category,
+			...buildingSpecFieldsFromCreation(project),
 		};
 
 		let orgRow: { id: string; owner: string } | null = null;
@@ -178,6 +180,13 @@ export async function updateProject(id: string, updates: Partial<IProject>) {
 		if (updates.status !== undefined) updateData.status = updates.status;
 		if (updates.category !== undefined)
 			updateData.category = updates.category;
+		if (updates.projectTypeId !== undefined)
+			updateData.projectTypeId = updates.projectTypeId;
+		if (updates.totalSqft !== undefined) updateData.totalSqft = updates.totalSqft;
+		if (updates.budgetPerSqft !== undefined)
+			updateData.budgetPerSqft = updates.budgetPerSqft;
+		if (updates.buildingSpecJson !== undefined)
+			updateData.buildingSpecJson = updates.buildingSpecJson;
 
 		const result = await projectDB.updateProject(id, updateData);
 

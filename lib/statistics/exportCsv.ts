@@ -226,6 +226,30 @@ export function buildPortfolioStatisticsCsv(
 	lines.push(row(["overview", "pending_approvals", snapshot.pendingApprovalCount]));
 	lines.push(row(["overview", "project_budget_total", snapshot.totalProjectBudget]));
 	lines.push(row(["overview", "project_spent_total", snapshot.totalProjectSpent]));
+	if (snapshot.totalBuiltUpSqft > 0) {
+		lines.push(
+			row(["overview", "total_built_up_sqft", snapshot.totalBuiltUpSqft]),
+		);
+		const portfolioPlannedPerSqft = Math.round(
+			snapshot.totalProjectBudget / snapshot.totalBuiltUpSqft,
+		);
+		lines.push(
+			row([
+				"overview",
+				"portfolio_planned_budget_per_sqft",
+				portfolioPlannedPerSqft,
+			]),
+		);
+		if (snapshot.totalProjectSpent > 0) {
+			lines.push(
+				row([
+					"overview",
+					"portfolio_actual_spend_per_sqft",
+					Math.round(snapshot.totalProjectSpent / snapshot.totalBuiltUpSqft),
+				]),
+			);
+		}
+	}
 	lines.push(row(["overview", "task_planned_total", snapshot.totalTaskPlannedBudget]));
 	lines.push(row(["overview", "task_spent_total", snapshot.totalTaskSpent]));
 	appendMaterialCsvSections(lines, options);
@@ -244,6 +268,9 @@ export function buildPortfolioStatisticsCsv(
 			"completions_previous_period",
 			"budget",
 			"spent",
+			"total_sqft",
+			"planned_budget_per_sqft",
+			"actual_spend_per_sqft",
 			"task_planned",
 			"task_spent",
 			"pending_approvals",
@@ -263,6 +290,9 @@ export function buildPortfolioStatisticsCsv(
 				p.completionsPreviousPeriod,
 				p.budget,
 				p.spent,
+				p.totalSqft > 0 ? p.totalSqft : "",
+				p.plannedBudgetPerSqft ?? "",
+				p.actualSpendPerSqft ?? "",
 				p.taskPlannedTotal,
 				p.taskSpentTotal,
 				p.pendingApprovals,
@@ -333,6 +363,27 @@ export function buildProjectStatisticsCsv(
 	lines.push(row(["overview", "pending_approvals", projectRow.pendingApprovals]));
 	lines.push(row(["overview", "budget", projectRow.budget]));
 	lines.push(row(["overview", "spent", projectRow.spent]));
+	if (projectRow.totalSqft > 0) {
+		lines.push(row(["overview", "total_sqft", projectRow.totalSqft]));
+		if (projectRow.plannedBudgetPerSqft != null) {
+			lines.push(
+				row([
+					"overview",
+					"planned_budget_per_sqft",
+					projectRow.plannedBudgetPerSqft,
+				]),
+			);
+		}
+		if (projectRow.actualSpendPerSqft != null) {
+			lines.push(
+				row([
+					"overview",
+					"actual_spend_per_sqft",
+					projectRow.actualSpendPerSqft,
+				]),
+			);
+		}
+	}
 	lines.push(row(["overview", "task_planned", projectRow.taskPlannedTotal]));
 	lines.push(row(["overview", "task_spent", projectRow.taskSpentTotal]));
 	appendMaterialCsvSections(lines, options);
