@@ -86,10 +86,48 @@ as $$
   );
 $$;
 
+create or replace function public.has_pending_join_org_invite(org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select exists (
+    select 1
+    from public.requests r
+    where r.type = 'JoinOrganisation'
+      and r.status = 'Pending'
+      and r."requestedTo" = auth.uid()
+      and (r."requestData"->>'organisationId')::uuid = org_id
+  );
+$$;
+
+create or replace function public.has_pending_join_project_invite(project_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
+  select exists (
+    select 1
+    from public.requests r
+    where r.type = 'JoinProject'
+      and r.status = 'Pending'
+      and r."requestedTo" = auth.uid()
+      and (r."requestData"->>'projectId')::uuid = project_id
+  );
+$$;
+
 grant execute on function public.is_org_member(uuid) to authenticated;
 grant execute on function public.is_org_admin_or_owner(uuid) to authenticated;
 grant execute on function public.can_access_project(uuid) to authenticated;
 grant execute on function public.can_manage_project(uuid) to authenticated;
+grant execute on function public.has_pending_join_org_invite(uuid) to authenticated;
+grant execute on function public.has_pending_join_project_invite(uuid) to authenticated;
 
 -- Global + private templates: replace placeholder after you create the shared template user.
 create or replace function public.template_owner_id()

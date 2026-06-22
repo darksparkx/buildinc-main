@@ -21,6 +21,7 @@ import {
 } from "@/lib/types";
 import { formatDate } from "@/lib/functions/utils";
 import { Mail, MoreHorizontal, UserCircle } from "lucide-react";
+import { toast } from "sonner";
 import AddMember from "./AddMember";
 import {
 	Card,
@@ -29,10 +30,8 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/base/ui/card";
-import {
-	getOrganisationMembersFromStore,
-	removeOrganisationMember,
-} from "@/lib/middleware/organisationMembers";
+import { removeOrganisationMember } from "@/lib/middleware/organisationMembers";
+import { useOrganisationMembers } from "@/lib/hooks/useOrganisationMembers";
 
 const PAGE_SIZE = 10;
 
@@ -50,8 +49,9 @@ const OrgMembers = ({
 	setChangeRoleId: (role: string) => void;
 }) => {
 	const [page, setPage] = useState(1);
+	const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
-	const members = getOrganisationMembersFromStore(organisation.id);
+	const members = useOrganisationMembers(organisation.id);
 	const startIndex = (page - 1) * PAGE_SIZE;
 	const paginatedMembers = members.slice(startIndex, startIndex + PAGE_SIZE);
 	const totalPages = Math.ceil(members.length / PAGE_SIZE);
@@ -67,13 +67,24 @@ const OrgMembers = ({
 		setChangeRoleModal(true);
 	};
 
-	const handleRemoveOrgMember = (member: IOrganisationProfile) => {
-		removeOrganisationMember(
-			member.memberInfo!.id,
-			organisation.id,
-			member.id
-		);
-		window.location.reload();
+	const handleRemoveOrgMember = async (member: IOrganisationProfile) => {
+		const linkId = member.memberInfo?.id;
+		if (!linkId) return;
+
+		setRemovingMemberId(member.id);
+		try {
+			await removeOrganisationMember(linkId, organisation.id, member.id);
+			toast.success(`${member.name ?? "Member"} removed from the organisation.`);
+			if (page > 1 && paginatedMembers.length === 1) {
+				setPage((p) => Math.max(1, p - 1));
+			}
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Could not remove this member.",
+			);
+		} finally {
+			setRemovingMemberId(null);
+		}
 	};
 
 	return (
@@ -137,9 +148,12 @@ const OrgMembers = ({
 												{member.memberInfo?.role !== "Admin" && (
 													<DropdownMenuItem
 														className="text-destructive focus:text-destructive"
+														disabled={removingMemberId === member.id}
 														onClick={() => handleRemoveOrgMember(member)}
 													>
-														Remove member
+														{removingMemberId === member.id
+															? "Removing…"
+															: "Remove member"}
 													</DropdownMenuItem>
 												)}
 											</DropdownMenuContent>
@@ -203,11 +217,14 @@ const OrgMembers = ({
 														{member.memberInfo?.role !== "Admin" && (
 															<DropdownMenuItem
 																className="text-destructive focus:text-destructive"
+																disabled={removingMemberId === member.id}
 																onClick={() =>
 																	handleRemoveOrgMember(member)
 																}
 															>
-																Remove member
+																{removingMemberId === member.id
+																	? "Removing…"
+																	: "Remove member"}
 															</DropdownMenuItem>
 														)}
 													</DropdownMenuContent>

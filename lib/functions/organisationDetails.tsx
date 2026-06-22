@@ -1,11 +1,15 @@
-import {
-	addOrganisationMember_DBONLY,
-	updateOrganisationMember,
-} from "../middleware/organisationMembers";
+import { addOrganisationMember, updateOrganisationMember } from "../middleware/organisationMembers";
 import { addRequest, updateRequest } from "../middleware/requests";
+import { useOrganisationMemberStore } from "../store/organisationMemberStore";
+import { useOrganisationStore } from "../store/organisationStore";
 import { useProfileStore } from "../store/profileStore";
-import { organisationMemberDB } from "../supabase/db/organisationMemberDB";
-import { IProfile, IProject, IRequest, role } from "../types";
+import { useRequestStore } from "../store/requestStore";
+import {
+	invitationDB,
+	isInvitationRpcMissing,
+} from "../supabase/db/invitationDB";
+import { organisationDB } from "../supabase/db/organisationDB";
+import { IOrganisationMemberDB, IProfile, IProject, IRequest, role } from "../types";
 
 export function organisationDetails(projects: IProject[] | null) {
 	const totalBudget: number =
@@ -19,13 +23,13 @@ export function organisationDetails(projects: IProject[] | null) {
 	return { totalBudget, totalSpent, budgetUtilization };
 }
 
-export function addMember(
+export async function addMember(
 	organisationId: string,
 	organisationName: string,
 	member: IProfile,
 	ownerId: string
 ) {
-	addRequest({
+	await addRequest({
 		id: crypto.randomUUID(),
 		type: "JoinOrganisation",
 		requestedBy: ownerId,
@@ -49,29 +53,62 @@ export function refuseInvitation(request: IRequest) {
 	});
 }
 
-export function acceptOrgInvitation(request: IRequest) {
+export async function acceptOrgInvitation(request: IRequest): Promise<void> {
 	const { profile } = useProfileStore.getState();
 	if (!profile) return;
 
-	// Add organisation to user's profile
 	const orgId = request.requestData.organisationId;
 	const orgName = request.requestData.organisationName;
-	if (orgId && orgName) {
-		addOrganisationMember_DBONLY({
+	if (!orgId || !orgName) {
+		throw new Error("Invalid organisation invitation.");
+	}
+
+	let member: IOrganisationMemberDB;
+	let usedRpc = false;
+
+	try {
+		({ member } = await invitationDB.acceptOrganisationInvitation(request.id));
+		usedRpc = true;
+	} catch (err) {
+		if (!isInvitationRpcMissing(err)) throw err;
+
+		const orgProfile = await addOrganisationMember({
 			id: crypto.randomUUID(),
-			orgId: orgId,
+			orgId,
 			userId: profile.id,
 			role: "Employee",
 			joinedAt: new Date(),
 		});
+		if (!orgProfile.memberInfo) {
+			throw new Error("Failed to join organisation.");
+		}
+		member = orgProfile.memberInfo;
+		await updateRequest(request.id, {
+			status: "Approved",
+			approvedBy: profile.id,
+			approvedAt: new Date(),
+		});
 	}
 
-	// Update request status to Approved
-	updateRequest(request.id, {
-		status: "Approved",
-		approvedBy: profile.id,
-		approvedAt: new Date(),
+	const org = await organisationDB.getOrganisation(orgId);
+	useOrganisationStore.getState().addOrganisation({
+		...org,
+		memberIds: [],
+		projectIds: [],
 	});
+
+	useOrganisationMemberStore.getState().addOrganisationMember(orgId, {
+		...profile,
+		memberInfo: member,
+	});
+
+	if (usedRpc) {
+		useRequestStore.getState().updateRequest(request.id, {
+			status: "Approved",
+			approvedBy: profile.id,
+			approvedAt: new Date(),
+		});
+	}
 }
 
 export function changeUserRole(id: string, orgId: string, newRole: string) {

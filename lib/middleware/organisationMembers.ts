@@ -1,13 +1,31 @@
 // lib/middleware/organisationMembers.ts
 import { organisationMemberDB } from "@/lib/supabase/db/organisationMemberDB";
+import { organisationDB } from "@/lib/supabase/db/organisationDB";
 import { profileDB } from "@/lib/supabase/db/profileDB";
 import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
+import { notifyRemovedFromOrganisation } from "./membershipNotifications";
 import {
 	IOrganisationProfile,
 	IOrganisationMemberDB,
 	IProfileDB,
 } from "../types";
 import { useOrganisationMemberStore } from "@/lib/store/organisationMemberStore";
+
+function rethrowMemberError(error: unknown, context: string): never {
+	const mapped = subscriptionLimitErrorMessage(error);
+	if (mapped) {
+		throw new Error(mapped);
+	}
+	const message =
+		error &&
+		typeof error === "object" &&
+		"message" in error &&
+		typeof (error as { message: unknown }).message === "string"
+			? (error as { message: string }).message
+			: context;
+	console.error(context + ":", error);
+	throw new Error(message);
+}
 
 // Helper function to combine member info with profile data
 async function createOrganisationProfile(
@@ -42,12 +60,7 @@ export async function addOrganisationMember(
 
 		return organisationProfile;
 	} catch (error) {
-		const mapped = subscriptionLimitErrorMessage(error);
-		if (mapped) {
-			throw new Error(mapped);
-		}
-		console.error("Error adding organisation member:", error);
-		throw error;
+		rethrowMemberError(error, "Error adding organisation member");
 	}
 }
 export async function addOrganisationMember_DBONLY(
@@ -59,12 +72,7 @@ export async function addOrganisationMember_DBONLY(
 
 		return organisationProfile;
 	} catch (error) {
-		const mapped = subscriptionLimitErrorMessage(error);
-		if (mapped) {
-			throw new Error(mapped);
-		}
-		console.error("Error adding organisation member:", error);
-		throw error;
+		rethrowMemberError(error, "Error adding organisation member");
 	}
 }
 
@@ -74,11 +82,18 @@ export async function removeOrganisationMember(
 	id: string
 ) {
 	try {
+		const org = await organisationDB.getOrganisation(orgId);
+
 		await organisationMemberDB.removeOrganisationMember(memberId);
 
-		// Remove from store
 		const store = useOrganisationMemberStore.getState();
 		store.removeOrganisationMember(orgId, id);
+
+		void notifyRemovedFromOrganisation({
+			recipientId: id,
+			orgId,
+			orgName: org.name,
+		});
 
 		return {
 			success: true,
@@ -125,20 +140,29 @@ export async function getOrganisationMembers(
 			return cachedMembers;
 		}
 
-		// If not in store, fetch from DB
-		const members = await organisationMemberDB.getOrganisationMembers(
-			orgId
-		);
+		return refreshOrganisationMembers(orgId);
+	} catch (error) {
+		console.error("Error getting organisation members:", error);
+		throw error;
+	}
+}
+
+/** Always loads members from the DB and replaces the store entry for this org. */
+export async function refreshOrganisationMembers(
+	orgId: string
+): Promise<IOrganisationProfile[]> {
+	try {
+		const members = await organisationMemberDB.getOrganisationMembers(orgId);
 		const organisationProfiles = await Promise.all(
 			members.map((member) => createOrganisationProfile(member))
 		);
 
-		// Update store
+		const store = useOrganisationMemberStore.getState();
 		store.setOrganisationMembers(orgId, organisationProfiles);
 
 		return organisationProfiles;
 	} catch (error) {
-		console.error("Error getting organisation members:", error);
+		console.error("Error refreshing organisation members:", error);
 		throw error;
 	}
 }

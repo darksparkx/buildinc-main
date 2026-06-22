@@ -6,6 +6,11 @@ NEXT:
         + color scheme
         - notifications
 
+    next step (master: P7.8 + P1.11):
+        - Unpaid/lapsed shell: minimal nav + upsell; hide Statistics and other payer-only surfaces until active sub
+        - Non-subscribers (members): join orgs/projects, do tasks; approvals inline on Tasks — no /approvals nav
+        - Active subscribers (owner shell): keep separate Tasks + Approvals pages
+
     admin:
         home:
             + recent activity on dashboard (NavigationShortcutsTracker + DashboardShortcuts)
@@ -30,7 +35,14 @@ NEXT:
 
 
         Vendors: 
-            - make everything
+            - vendor portal + builder-side directory — see (P5) Wave 0 + Wave 1+
+        
+        vendor portal (P5 Wave 0):
+            - Join as vendor on landing; vendor account type separate from org/project
+            - vendor profile wizard + vendor-only dashboard/shell
+        
+        viewer (P6.12 — later):
+            - project-level observe-only role for land owners; no public signup
         
         Settings:
             - make everything
@@ -91,7 +103,13 @@ TODO:
 /**/
 Master list:
     Cross-reference: granular stubs remain above (`NEXT`, `TODO`, `billing + beta`)—merge duplicates against this list as you complete work.
-    Sequential note: finish (P3) CSV round-trip (item 10); P4 done except optional budget RLS (P4.8)—then (P5) vendors. Budget per sqft is (P4), not P3.
+    Sequential note: **next** P7.8 unpaid/lapsed shell + P1.11 approval surfacing by tier; then (P3) CSV round-trip (item 10); **P5** (Wave 0 vendor account portal first, then builder procurement Waves 1–4); P4 done except optional budget RLS (P4.8). Budget per sqft is (P4), not P3.
+
+    Account personas (cross-cutting — not org/project member roles):
+        - **Builder** (default): subscriber owner shell, member shell, org/project Admin|Supervisor|Employee — today’s product.
+        - **Vendor**: separate platform account; own signup, profile, nav, dashboard; no builder pages unless explicitly linked to a procurement context (see P5 Wave 0).
+        - **Viewer** (later): project-scoped observe-only for land owners/clients; invite-only, no vendor/builder signup path (see P6.12).
+        Implementation: `profiles.account_type` (or equivalent) drives post-login shell; org/project `role` stays separate for builder teams.
 
     + (P1) Collaboration, workflow, and communication
         + 1. Unified in-app inbox / notification center (invites, approvals, assignments, completions, rejections)—backed by real queries, not demo UI.
@@ -102,8 +120,9 @@ Master list:
         - 6. File attachments other than photos (PDFs, specs, drawings) if users expect document trails.
         - 7. Version note or “reason for change” on sensitive edits (budget, dates, approvals).
         - 8. Templates for short messages (“Material delayed”, “Awaiting client sign-off”) for mobile speed.
-        - 9. Shareable deep links to a task/project (logged-in or read-only token for vendors/clients later).
+        + 9. Shareable deep links to a task/project (logged-in or read-only token for vendors/clients later)—viewer role (P6.12) may use read-only project links.
         + 10. Completion approvals: before approving task completion, auto-check for outstanding requests (material, payment, assignment, etc.) and block or warn.
+        - 11. Approval surfacing by subscription: non-subscribers (members, no owner shell) — no `/approvals` nav; pending actions on Tasks (assignment/completion/material requests inline). Active subscribers (owner shell) — keep separate Tasks + Approvals pages. Pause full inbox merge (P1.1) until later.
 
     + (P2) Discovery, navigation, and information architecture
         - 1. Global search (orgs, projects, tasks, people)—wire existing cmdk primitive app-wide.
@@ -115,6 +134,7 @@ Master list:
         + 7. Organisations list: filters + search (admin backlog).
         + 8. Projects list: filters + search (admin backlog).
         + 9. Admin home/dashboard: Recent activity component fed by real events (not static demo).
+        - 10. Landing CTAs + post-login routing by account type: Sign up (builder) + **Join as vendor**; redirect vendor accounts to vendor shell, not `/dashboard` builder flow (see P5.0, P8). Viewer: invite-only (P6.12).
 
     + (P3) Reporting, analytics, and Statistics
         + 1. Owner/admin statistics dashboard: throughput, spend vs planned, completion rates, overdue counts.
@@ -141,16 +161,23 @@ Master list:
         + 9. Statistics & CSV: sqft and budget/sqft columns when spec exists (extends (P3).10).
 
     (P5) Vendors, procurement, and field alignment
-        1. Vendors directory (contact, categories, default terms).
-        2. Link materials / requests to vendors where relevant.
-        3. Purchase or request history per vendor.
-        4. Preferred vendor flags on material types.
-        5. Light price history or last-paid hints when logging spend.
-        6. Material costing calculator in-product.
-        7. Settings: setup/configure material average cost (admin backlog).
+        Note: **Vendor account** (platform persona) ≠ **vendor directory row** (builder’s supplier contact). Wave 0 = vendor portal; Waves 1+ = builder-side procurement. Vendor users are independent of org/project membership until linked.
+        Wave 0 — Vendor portal (account type; do first)
+            - 0. Data model: `profiles.account_type` (`builder` | `vendor`); vendor profile fields (company, categories, contact, GST/terms optional); RLS scoped to own vendor row.
+            - 0. Landing + auth: **Join as vendor** on home/landing → vendor signup → mandatory profile wizard; block vendor users from builder routes (`/projects`, `/organisations`, `/approvals`, `/statistics`, `/billing`, create-project, etc.).
+            - 0. Vendor shell: `usesVendorShell()` (mirror `usesOwnerShell`); vendor nav + `components/dashboard/vendor/` (v1: profile, status, placeholder for RFQs/orders/history).
+            - 0. Link vendor account ↔ org `vendors` directory (admin adds/invites; or self-join + admin approve)—single vendor identity across builders where linked.
+        Wave 1+ — Builder-side procurement (subscriber/admin)
+            1. Vendors directory (contact, categories, default terms)—org-scoped; may link to vendor account from Wave 0.
+            2. Link materials / requests to vendors where relevant.
+            3. Purchase or request history per vendor.
+            4. Preferred vendor flags on material types.
+            5. Light price history or last-paid hints when logging spend.
+            6. Material costing calculator in-product.
+            7. Settings: setup/configure material average cost (admin backlog)—single source with (P4).2 estimator rate card.
 
     (P6) Permissions, roles, and governance
-        1. Explicit role matrix (owner, admin, manager, contributor, viewer, finance-only, etc.).
+        1. Explicit role matrix: **account personas** (builder, vendor—see P5; viewer invite-only—see 12) vs **org/project roles** (Admin, Supervisor, Employee, Viewer, finance-only, etc.).
         2. Project-level roles distinct from org-level where needed.
         3. Field-safe mode: hide sensitive totals for roles that must not see money.
         4. Invite revocation and expiring invite links.
@@ -161,6 +188,7 @@ Master list:
         9. Project member roles: when changing roles, enforce at least one supervisor remains.
         10. Financial visibility: do not show budget/spend to supervisors or non-admins—admin-only (UI + RLS aligned).
         11. Employees: allow voluntarily leaving an organisation (self-remove / leave flow).
+        - 12. **Viewer** role (land owner / client): project-scoped **observe-only**—progress, phases, milestones, photos; no tasks, approvals, edits, or financials. Invite from project admin only (no public signup). Optional read-only project dashboard tab; cross-ref (P3).9 progress surfaces. Distinct from vendor account type (P5) and from Employee.
 
     (P7) Billing, subscription, and commercial UX
         1. In-app subscription status card (plan, renewal/end, limits used vs max).
@@ -170,6 +198,7 @@ Master list:
         5. Seat usage indicator with clear definition of “seat”.
         6. Fair messaging when limits hit—who must hold the subscription (owner vs member).
         7. Organisation-level budget: set and edit org budget; allocate from org pool to projects (TODO backlog).
+        - 8. Unpaid/lapsed shell: minimal nav + upsell; defer full admin surfaces until active sub. Hide Statistics, org/project stats tabs, CSV/export, and other payer analytics for non-active subscribers; lapsed owners see renewal CTA + read-only or trimmed experience (define per route). Members without sub still join orgs/projects and work tasks (see P1.11). Align with P21.4 tier nav rules.
 
     (P8) Auth, account, and profile
         1. Email verification UX polish (resend, clear errors).
@@ -178,6 +207,7 @@ Master list:
         4. Account deletion UX: confirm modal, consequences, URL suitable for store policies.
         5. Data export request (“Download my data”) aside from delete.
         6. Profile completeness prompts (photo, phone for coordination).
+        - 7. Signup/onboarding by account type: builder (default `/auth/sign-up`) vs vendor (`Join as vendor` → set `account_type`, vendor profile wizard); post-auth redirect to correct shell (P5.0). Viewer: invite acceptance only (P6.12)—no vendor/builder choice on signup.
 
     (P9) Mobile, responsive, and Capacitor readiness
         1. Touch targets and spacing audit on every primary flow.
@@ -233,11 +263,11 @@ Master list:
         1. Error tracking (e.g. Sentry) with scrubbed user/org context.
         2. Structured logs on API routes with correlation ids.
         3. Support runbook or light admin tools for common fixes (stuck invite, wrong tier).
-        4. Feature flags for risky launches (statistics v1, vendors v1).
+        4. Feature flags for risky launches (statistics v1, vendors v1, vendor portal v1).
 
     (P16) QA depth
         1. `next build` in CI so broken deploys fail PRs.
-        2. E2E: signup → org → project → task → approval critical path.
+        2. E2E: signup → org → project → task → approval critical path; add vendor signup → vendor shell smoke; add viewer invite → read-only project smoke (when P6.12 ships).
         3. Contract tests on entitlement parsing and limit enforcement.
         4. Cross-browser matrix (Chrome, Safari, Firefox; mobile Safari).
         5. Optional axe accessibility scan in CI.
@@ -246,7 +276,7 @@ Master list:
         8. Keep baseline UX: new flows ship with button loading states + toast/error feedback (legacy NEXT items marked DONE).
 
     (P17) Marketing, SEO, and store-facing polish
-        1. Landing: screenshots and sections matching real UI; pricing honesty vs code unlock.
+        1. Landing: screenshots and sections matching real UI; pricing honesty vs code unlock; **Join as vendor** CTA alongside builder signup (P5.0, P2).10).
         2. `robots.txt` and `sitemap.xml` if public discovery matters.
         3. `manifest.json`, icons, theme colour for install/PWA feel before Capacitor.
         4. Open Graph / Twitter assets per major public route.
@@ -283,12 +313,13 @@ Master list:
         + 1. Remove or replace demo notification UI — done: `InboxBell` + deleted `DashboardNotifications`.
         2. Wire command palette globally once search exists.
         3. Fix nav duplication / consistency (`navitems.ts` duplicate Settings entries).
-        4. Align Statistics nav visibility with owner shell and future tier rules.
+        4. Align Statistics nav visibility with owner shell, active subscription, and tier rules — see (P7).8.
         5. Project details: fix used budget not showing (admin backlog).
         6. Create Project: save generated plans as org templates (rule packs); not a manual template picker at create.
         7. Project details: ship complete Settings tab (admin backlog).
         8. Admin Settings: finish remaining screens (overlap with estimator rate card—see (P4).2 and (P5).7).
-        9. Vendors admin area: implement end-to-end (screens + API + RLS)—full scope under (P5).
+        9. Vendors admin area: implement end-to-end (screens + API + RLS)—builder Wave 1+ under (P5); vendor portal under (P5) Wave 0.
+        10. Centralise shell routing: `account_type` + `usesOwnerShell` + `usesVendorShell` + (future) viewer/project-viewer guards; `navitems` per persona—replace ad-hoc page redirects.
 
     (P22) Billing beta — close-out checklist (internal phases B–F)
         1. Phase B–D: verify in prod—subscriber gates, org/project/seat caps, renewal banner + employee empty states, billing in nav, post-unlock entitlement refresh.

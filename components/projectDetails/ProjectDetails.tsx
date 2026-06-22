@@ -13,8 +13,7 @@ import {
 import { Tabs } from "@/components/base/ui/tabs";
 import { canViewProjectFinancials } from "@/lib/permissions/canViewProjectFinancials";
 import { RupeeIcon } from "@/lib/functions/utils";
-import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
-import { getProjectMembersByProjectIdFromStore } from "@/lib/middleware/projectMembers";
+import { useProjectMembers } from "@/lib/hooks/useProjectMembers";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useprojectDetailStore } from "@/lib/store/projectDetailStore";
@@ -84,7 +83,6 @@ function ProjectWorkspace({
 	projectData,
 	organisation,
 	teamMembers,
-	organisationMembers,
 	setChangeRole,
 	setChangeRoleModal,
 	setChangeRoleUser,
@@ -96,8 +94,7 @@ function ProjectWorkspace({
 }: {
 	projectData: IProject;
 	organisation: IOrganisation | undefined;
-	teamMembers: IProjectProfile[] | undefined;
-	organisationMembers: ReturnType<typeof getOrganisationMembersFromStore>;
+	teamMembers: IProjectProfile[];
 	setChangeRole: Dispatch<SetStateAction<string>>;
 	setChangeRoleModal: Dispatch<SetStateAction<boolean>>;
 	setChangeRoleUser: Dispatch<SetStateAction<string>>;
@@ -147,11 +144,9 @@ function ProjectWorkspace({
 				<ProjectStatistics projectData={projectData} />
 			) : null}
 			<Members
-				members={teamMembers ?? []}
-				organisationMembers={organisationMembers}
-				teamMembers={teamMembers ?? []}
 				projectId={projectData.id}
 				projectName={projectData.name}
+				orgId={projectData.orgId ?? ""}
 				setChangeRole={setChangeRole}
 				setChangeRoleModal={setChangeRoleModal}
 				setChangeRoleUser={setChangeRoleUser}
@@ -186,13 +181,7 @@ export default function ProjectDetails() {
 		(org) => org.id === projectData?.orgId,
 	);
 
-	const teamMembers = getProjectMembersByProjectIdFromStore(
-		projectData?.id || "",
-	);
-
-	const organisationMembers = getOrganisationMembersFromStore(
-		organisation?.id ?? "",
-	);
+	const teamMembers = useProjectMembers(projectData?.id);
 
 	if (!projectData) {
 		return <LoadingSpinner />;
@@ -221,7 +210,6 @@ export default function ProjectDetails() {
 						projectData={projectData}
 						organisation={organisation}
 						teamMembers={teamMembers}
-						organisationMembers={organisationMembers}
 						setChangeRole={setChangeRole}
 						setChangeRoleModal={setChangeRoleModal}
 						setChangeRoleUser={setChangeRoleUser}
@@ -244,7 +232,7 @@ export default function ProjectDetails() {
 				setIsAssignTaskOpen={setIsAssignTaskOpen}
 				selectedTask={selectedTask}
 				setSelectedTask={setSelectedTask}
-				teamMembers={teamMembers || []}
+				teamMembers={teamMembers}
 				projectData={projectData}
 				updateprojectDetails={updateprojectDetails}
 				currentUserId={currentUserId}

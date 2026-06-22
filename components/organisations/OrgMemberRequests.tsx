@@ -1,5 +1,5 @@
 import { IRequest } from "@/lib/types";
-import React from "react";
+import React, { useState } from "react";
 import {
 	Card,
 	CardHeader,
@@ -16,17 +16,61 @@ import {
 	TableCell,
 } from "../base/ui/table";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
-import { Check, Inbox, X } from "lucide-react";
+import { Check, Inbox, Loader2, X } from "lucide-react";
 import { Button } from "../base/ui/button";
 import {
 	acceptOrgInvitation,
 	refuseInvitation,
 } from "@/lib/functions/organisationDetails";
+import { toast } from "sonner";
 
 const OrgMemberRequests = ({ requests }: { requests: IRequest[] }) => {
+	const [processingId, setProcessingId] = useState<string | null>(null);
+	const [processingAction, setProcessingAction] = useState<
+		"accept" | "decline" | null
+	>(null);
+
 	const orgMemberRequests = requests.filter(
 		(req) => req.type === "JoinOrganisation" && req.status === "Pending",
 	);
+
+	const isProcessing = (reqId: string) => processingId === reqId;
+
+	const handleAccept = async (req: IRequest) => {
+		setProcessingId(req.id);
+		setProcessingAction("accept");
+		try {
+			await acceptOrgInvitation(req);
+			toast.success("You joined the organisation.");
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Could not accept this invitation.",
+			);
+		} finally {
+			setProcessingId(null);
+			setProcessingAction(null);
+		}
+	};
+
+	const handleDecline = async (req: IRequest) => {
+		setProcessingId(req.id);
+		setProcessingAction("decline");
+		try {
+			refuseInvitation(req);
+			toast.success("Invitation declined.");
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Could not decline this invitation.",
+			);
+		} finally {
+			setProcessingId(null);
+			setProcessingAction(null);
+		}
+	};
 
 	return (
 		<Card className="border-border/60 bg-background/80 shadow-sm ring-1 ring-border/40 backdrop-blur-sm">
@@ -47,6 +91,11 @@ const OrgMemberRequests = ({ requests }: { requests: IRequest[] }) => {
 									getAllProfilesFromStore().find(
 										(p) => p.id === req.requestedBy,
 									);
+								const busy = isProcessing(req.id);
+								const accepting =
+									busy && processingAction === "accept";
+								const declining =
+									busy && processingAction === "decline";
 								return (
 									<li
 										key={req.id}
@@ -68,30 +117,42 @@ const OrgMemberRequests = ({ requests }: { requests: IRequest[] }) => {
 												variant="secondary"
 												size="sm"
 												className="flex-1"
-												onClick={() =>
-													acceptOrgInvitation(req)
-												}
+												disabled={busy}
+												onClick={() => handleAccept(req)}
 											>
-												<Check
-													className="mr-1.5 h-4 w-4"
-													aria-hidden
-												/>
-												Accept
+												{accepting ? (
+													<Loader2
+														className="mr-1.5 h-4 w-4 animate-spin"
+														aria-hidden
+													/>
+												) : (
+													<Check
+														className="mr-1.5 h-4 w-4"
+														aria-hidden
+													/>
+												)}
+												{accepting ? "Joining…" : "Accept"}
 											</Button>
 											<Button
 												type="button"
 												variant="outline"
 												size="sm"
 												className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10"
-												onClick={() =>
-													refuseInvitation(req)
-												}
+												disabled={busy}
+												onClick={() => handleDecline(req)}
 											>
-												<X
-													className="mr-1.5 h-4 w-4"
-													aria-hidden
-												/>
-												Decline
+												{declining ? (
+													<Loader2
+														className="mr-1.5 h-4 w-4 animate-spin"
+														aria-hidden
+													/>
+												) : (
+													<X
+														className="mr-1.5 h-4 w-4"
+														aria-hidden
+													/>
+												)}
+												{declining ? "Declining…" : "Decline"}
 											</Button>
 										</div>
 									</li>
@@ -119,6 +180,11 @@ const OrgMemberRequests = ({ requests }: { requests: IRequest[] }) => {
 												(p) =>
 													p.id === req.requestedBy,
 											);
+										const busy = isProcessing(req.id);
+										const accepting =
+											busy && processingAction === "accept";
+										const declining =
+											busy && processingAction === "decline";
 										return (
 											<TableRow
 												key={req.id}
@@ -140,34 +206,50 @@ const OrgMemberRequests = ({ requests }: { requests: IRequest[] }) => {
 															type="button"
 															variant="secondary"
 															size="sm"
+															disabled={busy}
 															onClick={() =>
-																acceptOrgInvitation(
-																	req,
-																)
+																handleAccept(req)
 															}
 														>
-															<Check
-																className="mr-1 h-4 w-4"
-																aria-hidden
-															/>
-															Accept
+															{accepting ? (
+																<Loader2
+																	className="mr-1 h-4 w-4 animate-spin"
+																	aria-hidden
+																/>
+															) : (
+																<Check
+																	className="mr-1 h-4 w-4"
+																	aria-hidden
+																/>
+															)}
+															{accepting
+																? "Joining…"
+																: "Accept"}
 														</Button>
 														<Button
 															type="button"
 															variant="outline"
 															size="sm"
 															className="border-destructive/30 text-destructive hover:bg-destructive/10"
+															disabled={busy}
 															onClick={() =>
-																refuseInvitation(
-																	req,
-																)
+																handleDecline(req)
 															}
 														>
-															<X
-																className="mr-1 h-4 w-4"
-																aria-hidden
-															/>
-															Decline
+															{declining ? (
+																<Loader2
+																	className="mr-1 h-4 w-4 animate-spin"
+																	aria-hidden
+																/>
+															) : (
+																<X
+																	className="mr-1 h-4 w-4"
+																	aria-hidden
+																/>
+															)}
+															{declining
+																? "Declining…"
+																: "Decline"}
 														</Button>
 													</div>
 												</TableCell>

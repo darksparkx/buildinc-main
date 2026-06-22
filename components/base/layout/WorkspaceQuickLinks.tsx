@@ -15,11 +15,8 @@ export function WorkspaceQuickLinks() {
 			<Link href="/dashboard" className={linkClass}>
 				Dashboard
 			</Link>
-			<Link href="/organisations" className={linkClass}>
-				Organisations
-			</Link>
-			<Link href="/projects" className={linkClass}>
-				Projects
+			<Link href="/workspace" className={linkClass}>
+				Workspace
 			</Link>
 			<Link href="/tasks" className={linkClass}>
 				Tasks

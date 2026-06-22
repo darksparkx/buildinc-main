@@ -1,12 +1,21 @@
 "use client";
 
 import { SummaryCard } from "@/components/base/general/SummaryCard";
-import { ITask } from "@/lib/types";
+import TaskAssignmentRequests from "@/components/tasks/TaskAssignmentRequests";
+import { ITask, IRequest } from "@/lib/types";
 import { AlertCircle, CheckCircle2, ClipboardList, Loader } from "lucide-react";
 import { useMemo } from "react";
 import TaskTable from "./TaskTable";
 
-export default function Tasks({ tasks }: { tasks: ITask[] }) {
+export default function Tasks({
+	tasks,
+	requests = [],
+	profileId,
+}: {
+	tasks: ITask[];
+	requests?: IRequest[];
+	profileId?: string;
+}) {
 	const inProgressTasks = useMemo(
 		() => tasks.filter((task) => task.status === "Active"),
 		[tasks],
@@ -79,6 +88,13 @@ export default function Tasks({ tasks }: { tasks: ITask[] }) {
 						/>
 					</div>
 				</header>
+
+				{profileId ? (
+					<TaskAssignmentRequests
+						requests={requests}
+						profileId={profileId}
+					/>
+				) : null}
 
 				<TaskTable
 					section="active"

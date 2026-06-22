@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/base/ui/button";
 import {
 	Dialog,
@@ -14,27 +14,20 @@ import {
 import { Input } from "@/components/base/ui/input";
 import { ScrollArea } from "@/components/base/ui/scroll-area";
 import { UserPlus } from "lucide-react";
-import {
-	IOrganisation,
-	IOrganisationProfile,
-	IProfile,
-	IProject,
-	IProjectProfile,
-} from "@/lib/types";
+import { IProfile } from "@/lib/types";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
+import { useOrganisationMembers } from "@/lib/hooks/useOrganisationMembers";
+import { useProjectMembers } from "@/lib/hooks/useProjectMembers";
 import { useProfileStore } from "@/lib/store/profileStore";
-import { addMember } from "@/lib/functions/organisationDetails";
-import { getProjectMembersByProjectIdFromStore } from "@/lib/middleware/projectMembers";
-import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import { addProjectMember } from "@/lib/functions/projectDetails";
 import {
 	modalButtonCancelClass,
 	modalButtonConfirmClass,
 } from "@/lib/functions/modalButtonStyles";
+import { toast } from "sonner";
 
 type Props = {
-	organisationMembers: IOrganisationProfile[];
-	teamMembers: IProjectProfile[];
+	orgId: string;
 	projectId: string;
 	projectName: string;
 };
@@ -42,40 +35,40 @@ type Props = {
 interface SearchResults extends IProfile {
 	added: boolean;
 }
-const AddMemberModal = ({
-	organisationMembers,
-	teamMembers,
-	projectId,
-	projectName,
-}: Props) => {
+
+const AddMemberModal = ({ orgId, projectId, projectName }: Props) => {
 	const ownerId = useProfileStore((state) => state.profile?.id) || "";
 	const [isOpen, setIsOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [users, setUsers] = useState<SearchResults[]>([]);
 	const [selectedUser, setSelectedUser] = useState<IProfile | null>(null);
 	const [loading, setLoading] = useState(false);
-	const allProfiles = getAllProfilesFromStore();
-	const orgMemberIds = organisationMembers.map(
-		(member) => member.id
-	) as string[];
+	const { allProfiles } = useProfileStore();
+	const organisationMembers = useOrganisationMembers(orgId);
+	const projectMembers = useProjectMembers(projectId);
+	const orgMemberIds = useMemo(
+		() => organisationMembers.map((member) => member.id),
+		[organisationMembers],
+	);
+	const projectMemberIds = useMemo(
+		() => new Set(projectMembers.map((member) => member.id)),
+		[projectMembers],
+	);
 
-	// Fetch all organisation members and mark project members as added
 	useEffect(() => {
 		const fetchUsers = () => {
 			try {
-				const data = allProfiles;
+				const data = allProfiles.length
+					? allProfiles
+					: getAllProfilesFromStore();
 
-				// Filter to only show organisation members
 				const orgMembers = data.filter((user: IProfile) =>
-					orgMemberIds.includes(user.id)
+					orgMemberIds.includes(user.id),
 				);
 
-				// Mark users as added if they are already project members
 				const dataWithAdded = orgMembers.map((user: IProfile) => ({
 					...user,
-					added: teamMembers.some(
-						(member) => member.name === user.name
-					),
+					added: projectMemberIds.has(user.id),
 				}));
 				setUsers(dataWithAdded);
 			} catch (err) {
@@ -83,36 +76,10 @@ const AddMemberModal = ({
 			}
 		};
 		if (isOpen) fetchUsers();
-	}, [isOpen, teamMembers, allProfiles]);
+	}, [isOpen, orgMemberIds, projectMemberIds, allProfiles]);
 
-	// Search users within organisation members
 	useEffect(() => {
-		if (!searchQuery) {
-			// If no search query, show all organisation members
-			const fetchAllOrgMembers = () => {
-				try {
-					const data = allProfiles.length
-						? allProfiles
-						: getAllProfilesFromStore();
-
-					const orgMembers = (data ?? []).filter((user: IProfile) =>
-						orgMemberIds.includes(user.id)
-					);
-
-					const dataWithAdded = orgMembers.map((user: IProfile) => ({
-						...user,
-						added: teamMembers.some(
-							(member) => member.id === user.id
-						),
-					}));
-					setUsers(dataWithAdded);
-				} catch (err) {
-					console.error("Failed to load users", err);
-				}
-			};
-			fetchAllOrgMembers();
-			return;
-		}
+		if (!searchQuery) return;
 
 		const timeout = setTimeout(() => {
 			try {
@@ -120,18 +87,17 @@ const AddMemberModal = ({
 					? allProfiles
 					: getAllProfilesFromStore();
 
-				// Search within organisation members only
 				const results = data.filter(
 					(user: IProfile) =>
 						orgMemberIds.includes(user.id) &&
 						(user.name ?? "")
 							.toLowerCase()
-							.includes(searchQuery.toLowerCase())
+							.includes(searchQuery.toLowerCase()),
 				);
 
 				const resultsWithAdded = results.map((user: IProfile) => ({
 					...user,
-					added: teamMembers.some((member) => member.id === user.id),
+					added: projectMemberIds.has(user.id),
 				}));
 				setUsers(resultsWithAdded);
 			} catch (err) {
@@ -139,22 +105,33 @@ const AddMemberModal = ({
 			}
 		}, 300);
 		return () => clearTimeout(timeout);
-	}, [searchQuery, teamMembers, allProfiles]);
+	}, [searchQuery, orgMemberIds, projectMemberIds, allProfiles]);
 
-	const handleAdd = () => {
+	const handleAdd = async () => {
 		if (!selectedUser) return;
-		addProjectMember(projectId, projectName, selectedUser, ownerId);
-		setIsOpen(false);
-		setSelectedUser(null);
-		setSearchQuery("");
-		setLoading(false);
+		setLoading(true);
+		try {
+			await addProjectMember(
+				projectId,
+				projectName,
+				selectedUser,
+				ownerId,
+			);
+			toast.success(`Invitation sent to ${selectedUser.name ?? "member"}.`);
+			setIsOpen(false);
+			setSelectedUser(null);
+			setSearchQuery("");
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Could not send invitation.",
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (
-		<Dialog
-			open={isOpen}
-			onOpenChange={setIsOpen}
-		>
+		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			<DialogTrigger asChild>
 				<Button
 					type="button"
@@ -189,11 +166,10 @@ const AddMemberModal = ({
 							placeholder="Search by name..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className=""
 						/>
 					</div>
 
-					<ScrollArea className="h-64 border rounded-md p-2">
+					<ScrollArea className="h-64 rounded-md border p-2">
 						{users.length === 0 && (
 							<p className="text-sm text-muted-foreground">
 								No organisation members found.
@@ -203,13 +179,13 @@ const AddMemberModal = ({
 							{users.map((user) => (
 								<li
 									key={user.id}
-									className={`flex items-center justify-between rounded-md p-2 cursor-pointer ${
+									className={`flex cursor-pointer items-center justify-between rounded-md p-2 ${
 										selectedUser?.id === user.id
 											? "bg-muted"
 											: "hover:bg-muted/50"
 									} ${
 										user.added
-											? "opacity-50 cursor-not-allowed"
+											? "cursor-not-allowed opacity-50"
 											: ""
 									}`}
 									onClick={() => {

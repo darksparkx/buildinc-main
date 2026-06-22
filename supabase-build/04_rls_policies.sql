@@ -73,6 +73,14 @@ create policy org_member_insert_admin on public.organisation_members
 for insert to authenticated
 with check (public.is_org_admin_or_owner("orgId"));
 
+drop policy if exists org_member_insert_self_invite on public.organisation_members;
+create policy org_member_insert_self_invite on public.organisation_members
+for insert to authenticated
+with check (
+  "userId" = auth.uid()
+  and public.has_pending_join_org_invite("orgId")
+);
+
 drop policy if exists org_member_update_admin on public.organisation_members;
 create policy org_member_update_admin on public.organisation_members
 for update to authenticated
@@ -123,6 +131,14 @@ drop policy if exists project_members_insert_manage on public.project_members;
 create policy project_members_insert_manage on public.project_members
 for insert to authenticated
 with check (public.can_manage_project("projectId"));
+
+drop policy if exists project_members_insert_self_invite on public.project_members;
+create policy project_members_insert_self_invite on public.project_members
+for insert to authenticated
+with check (
+  "userId" = auth.uid()
+  and public.has_pending_join_project_invite("projectId")
+);
 
 drop policy if exists project_members_update_manage on public.project_members;
 create policy project_members_update_manage on public.project_members

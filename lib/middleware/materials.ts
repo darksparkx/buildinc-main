@@ -235,7 +235,7 @@ export function getTaskMaterialsFromStore(taskId: string): IMaterial[] {
 			.getState()
 			.getMaterialsByTask(taskId);
 
-		const enrichedMaterials: IMaterial[] = materials.map((material) => ({
+		return materials.map((material) => ({
 			...material,
 			units: availableMaterials.find(
 				(mat) => mat.id === material.materialId
@@ -244,12 +244,6 @@ export function getTaskMaterialsFromStore(taskId: string): IMaterial[] {
 				(mat) => mat.id === material.materialId
 			)?.defaultUnit,
 		}));
-
-		// Update store
-		const store = useMaterialStore.getState();
-		store.setMaterials(enrichedMaterials);
-
-		return enrichedMaterials;
 	} catch (error) {
 		console.error("Error getting task materials:", error);
 		throw error;

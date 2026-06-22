@@ -46,25 +46,32 @@ const PaymentModal = ({
 		if (!selectedTask || !amount || !user || !projectId) return;
 
 		setLoading(true);
-		// Step 1: Create the request (DB row)
-		const newRequestId = await requestPayment(
-			selectedTask,
-			amount,
-			projectId,
-			notes
-		);
+		try {
+			const newRequestId = await requestPayment(
+				selectedTask,
+				amount,
+				projectId,
+				notes,
+				user.id,
+			);
 
-		// Step 2: Upload all photos for that request
-		for (const file of photos) {
-			await addRequestPhoto(newRequestId, file, user.id as string);
+			for (const file of photos) {
+				await addRequestPhoto(newRequestId, file, user.id as string);
+			}
+
+			setIsPaymentModalOpen(false);
+			setAmount(0);
+			setNotes("");
+			setPhotos([]);
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Could not submit payment request.",
+			);
+		} finally {
+			setLoading(false);
 		}
-
-		// Step 3: Cleanup
-		setIsPaymentModalOpen(false);
-		setAmount(0);
-		setNotes("");
-		setPhotos([]);
-		setLoading(false);
 	};
 
 	const handleClose = () => {

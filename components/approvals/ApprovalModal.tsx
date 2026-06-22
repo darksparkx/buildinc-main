@@ -29,8 +29,8 @@ import { requestStatusBadgeVariant } from "@/lib/functions/taskStatusUi";
 import { RupeeIcon } from "@/lib/functions/utils";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { IProfile, IRequest } from "@/lib/types";
-import { CheckCircle, XCircle } from "lucide-react";
-import React from "react";
+import { CheckCircle, Loader2, XCircle } from "lucide-react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import { PhotoGalleryViewer } from "../base/general/PhotoViewer";
 
@@ -76,12 +76,23 @@ async function runApprove(
 				toast.error("Only the invited user can accept this invitation.");
 				return false;
 			}
-			if (selectedApproval.type === "JoinOrganisation") {
-				acceptOrgInvitation(selectedApproval);
-			} else {
-				acceptProjectInvitation(selectedApproval);
+			try {
+				if (selectedApproval.type === "JoinOrganisation") {
+					await acceptOrgInvitation(selectedApproval);
+					toast.success("You joined the organisation.");
+				} else {
+					await acceptProjectInvitation(selectedApproval);
+					toast.success("You joined the project.");
+				}
+				return true;
+			} catch (err) {
+				toast.error(
+					err instanceof Error
+						? err.message
+						: "Could not accept this invitation.",
+				);
+				return false;
 			}
-			return true;
 		}
 		default: {
 			const kind = selectedApproval.type as string;
@@ -299,37 +310,88 @@ const ApprovalButtons = ({
 	selectedApproval: IRequest | null;
 	setIsDetailDialogOpen: (open: boolean) => void;
 	profile: IProfile | null;
-}) => (
+}) => {
+	const [isApproving, setIsApproving] = useState(false);
+	const [isRejecting, setIsRejecting] = useState(false);
+	const busy = isApproving || isRejecting;
+	const isJoinInvite =
+		selectedApproval?.type === "JoinOrganisation" ||
+		selectedApproval?.type === "JoinProject";
+
+	return (
 	<>
 		<Button
 			type="button"
 			variant="outline"
-			onClick={async () => {
-				if (selectedApproval) await handleReject(selectedApproval, profile);
-				setIsDetailDialogOpen(false);
-			}}
-			className={modalButtonDangerClass}
-		>
-			<XCircle className="h-4 w-4" aria-hidden />
-			Reject
-		</Button>
-		<Button
-			type="button"
-			variant="outline"
-			className={modalButtonConfirmClass}
+			disabled={busy}
 			onClick={async () => {
 				if (!selectedApproval) {
 					setIsDetailDialogOpen(false);
 					return;
 				}
-				const mayClose = await runApprove(selectedApproval, profile);
-				if (mayClose) setIsDetailDialogOpen(false);
+				setIsRejecting(true);
+				try {
+					await handleReject(selectedApproval, profile);
+					setIsDetailDialogOpen(false);
+				} catch (err) {
+					toast.error(
+						err instanceof Error
+							? err.message
+							: "Could not reject this request.",
+					);
+				} finally {
+					setIsRejecting(false);
+				}
+			}}
+			className={modalButtonDangerClass}
+		>
+			{isRejecting ? (
+				<Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+			) : (
+				<XCircle className="h-4 w-4" aria-hidden />
+			)}
+			{isRejecting ? "Rejecting…" : "Reject"}
+		</Button>
+		<Button
+			type="button"
+			variant="outline"
+			className={modalButtonConfirmClass}
+			disabled={busy}
+			onClick={async () => {
+				if (!selectedApproval) {
+					setIsDetailDialogOpen(false);
+					return;
+				}
+				setIsApproving(true);
+				try {
+					const mayClose = await runApprove(selectedApproval, profile);
+					if (mayClose) setIsDetailDialogOpen(false);
+				} catch (err) {
+					toast.error(
+						err instanceof Error
+							? err.message
+							: "Could not approve this request.",
+					);
+				} finally {
+					setIsApproving(false);
+				}
 			}}
 		>
-			<CheckCircle className="h-4 w-4" aria-hidden />
-			Approve
+			{isApproving ? (
+				<Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+			) : (
+				<CheckCircle className="h-4 w-4" aria-hidden />
+			)}
+			{isApproving
+				? isJoinInvite
+					? "Joining…"
+					: "Approving…"
+				: isJoinInvite
+					? "Accept"
+					: "Approve"}
 		</Button>
 	</>
-);
+	);
+};
 
 export default ApprovalModal;

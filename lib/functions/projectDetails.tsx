@@ -1,6 +1,6 @@
 import { useTaskStore } from "@/lib/store/taskStore";
 import { usePhaseStore } from "@/lib/store/phaseStore";
-import { IProfile, IProject, IRequest, ITask, role, status } from "../types";
+import { IProfile, IProject, IRequest, ITask, IProjectMemberDB, role, status } from "../types";
 import {
 	getPhaseTasksFromStore,
 	getTaskFromStore,
@@ -10,6 +10,14 @@ import { getPhaseFromStore } from "../middleware/phases";
 import { updateProject } from "../middleware/projects";
 import { addRequest, updateRequest } from "../middleware/requests";
 import { useProfileStore } from "../store/profileStore";
+import { useProjectMemberStore } from "../store/projectMemberStore";
+import { useProjectStore } from "../store/projectStore";
+import { useRequestStore } from "../store/requestStore";
+import {
+	invitationDB,
+	isInvitationRpcMissing,
+} from "../supabase/db/invitationDB";
+import { projectDB } from "../supabase/db/projectDB";
 import {
 	addProjectMember_DBONLY,
 	updateProjectMember,
@@ -113,13 +121,13 @@ export function completeTask(
 	}
 }
 
-export function addProjectMember(
+export async function addProjectMember(
 	projectId: string,
 	projectName: string,
 	member: IProfile,
 	ownerId: string
 ) {
-	addRequest({
+	await addRequest({
 		id: crypto.randomUUID(),
 		type: "JoinProject",
 		requestedBy: ownerId,
@@ -143,31 +151,65 @@ export function refuseInvitation(request: IRequest) {
 	});
 }
 
-export function acceptProjectInvitation(request: IRequest) {
+export async function acceptProjectInvitation(request: IRequest): Promise<void> {
 	const { profile } = useProfileStore.getState();
 	if (!profile) return;
 
-	// Add organisation to user's profile
 	const projectId = request.requestData.projectId;
 	const projectName = request.requestData.projectName;
-	if (projectId && projectName) {
-		addProjectMember_DBONLY({
+	if (!projectId || !projectName) {
+		throw new Error("Invalid project invitation.");
+	}
+
+	let member: IProjectMemberDB;
+	let usedRpc = false;
+
+	try {
+		({ member } = await invitationDB.acceptProjectInvitation(request.id));
+		usedRpc = true;
+	} catch (err) {
+		if (!isInvitationRpcMissing(err)) throw err;
+
+		const projectProfile = await addProjectMember_DBONLY({
 			id: crypto.randomUUID(),
 			joinedAt: new Date(),
-			projectId: projectId,
+			projectId,
 			userId: profile.id,
 			role: "Employee",
-		}).catch((err) => {
-			console.error("Failed to add project member:", err);
+		});
+		if (!projectProfile.memberInfo) {
+			throw new Error("Failed to join project.");
+		}
+		member = projectProfile.memberInfo;
+		await updateRequest(request.id, {
+			status: "Approved",
+			approvedBy: profile.id,
+			approvedAt: new Date(),
 		});
 	}
 
-	// Update request status to Approved
-	updateRequest(request.id, {
-		status: "Approved",
-		approvedBy: profile.id,
-		approvedAt: new Date(),
+	const project = await projectDB.getProject(projectId);
+	useProjectStore.getState().addProject({
+		...project,
+		memberIds: [],
+		phaseIds: [],
+		progress: 0,
+		totalTasks: 0,
+		completedTasks: 0,
 	});
+
+	useProjectMemberStore.getState().addProjectMember(projectId, {
+		...profile,
+		memberInfo: member,
+	});
+
+	if (usedRpc) {
+		useRequestStore.getState().updateRequest(request.id, {
+			status: "Approved",
+			approvedBy: profile.id,
+			approvedAt: new Date(),
+		});
+	}
 }
 
 export function changeUserRole(

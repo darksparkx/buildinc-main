@@ -6,6 +6,7 @@ import { IPhase } from "@/lib/types";
 interface PhaseState {
 	phases: Record<string, IPhase>;
 	setPhases: (phases: IPhase[]) => void;
+	setProjectPhases: (projectId: string, phases: IPhase[]) => void;
 	updatePhase: (id: string, updates: Partial<IPhase>) => void;
 	addPhase: (phase: IPhase) => void;
 	deletePhase: (id: string) => void;
@@ -25,6 +26,21 @@ export const usePhaseStore = create<PhaseState>()(
 					phasesObj[phase.id] = phase;
 				});
 				set({ phases: phasesObj });
+			},
+
+			setProjectPhases: (projectId, phases) => {
+				set((state) => {
+					const retained = Object.fromEntries(
+						Object.entries(state.phases).filter(
+							([, phase]) => phase.projectId !== projectId,
+						),
+					);
+					const next = { ...retained };
+					phases.forEach((phase) => {
+						next[phase.id] = phase;
+					});
+					return { phases: next };
+				});
 			},
 
 			updatePhase: (id, updates) => {

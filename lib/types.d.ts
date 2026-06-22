@@ -174,6 +174,22 @@ export interface ICommentMentionNotificationDB {
 	readAt: Date | null;
 }
 
+export type MembershipNotificationKind =
+	| "removed_from_organisation"
+	| "removed_from_project";
+
+export interface IMembershipNotificationDB {
+	id: string;
+	created_at: Date;
+	recipientId: string;
+	actorId: string;
+	kind: MembershipNotificationKind;
+	orgId: string | null;
+	projectId: string | null;
+	entityName: string;
+	readAt: Date | null;
+}
+
 // 1.2 Secondary, part of another table
 export interface IMaterialDB {
 	// noChange

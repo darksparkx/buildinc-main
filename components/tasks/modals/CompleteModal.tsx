@@ -68,13 +68,17 @@ const CompleteModal = ({
 				newRequestId = await handleTaskCompletion(selectedTask.id);
 			} catch (e) {
 				console.error(e);
-				toast.error("Failed to submit completion. Check the console.");
+				toast.error(
+					e instanceof Error
+						? e.message
+						: "Failed to submit completion.",
+				);
 				return;
 			}
 
 			if (!newRequestId) {
 				toast.error(
-					"Could not submit completion. The task may be missing an assignee, or the project could not be resolved."
+					"Could not submit completion. The task may be missing an assignee, or no supervisor/admin is set on the project.",
 				);
 				return;
 			}

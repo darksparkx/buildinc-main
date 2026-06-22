@@ -2,9 +2,16 @@ import { updateMaterial } from "../middleware/materials";
 import { getPhaseFromStore } from "../middleware/phases";
 import { getProjectFromStore } from "../middleware/projects";
 import { addRequest } from "../middleware/requests";
-import { getTaskFromStore, updateTask } from "../middleware/tasks";
+import { getTaskFromStore } from "../middleware/tasks";
+import {
+	isTaskWorkflowRpcMissing,
+	taskWorkflowDB,
+} from "../supabase/db/taskWorkflowDB";
 import { useProfileStore } from "../store/profileStore";
-import { IMaterial, ITask } from "../types";
+import { useTaskStore } from "../store/taskStore";
+import { IMaterial, ITask, ITaskDB } from "../types";
+import { recomputePhaseAndProjectProgress } from "./base";
+import { resolveTaskWorkflowApproverId } from "./taskWorkflowApprover";
 
 export const getProjectNameFromPhaseId = (phaseId: string): string => {
 	const phase = getPhaseFromStore(phaseId);
@@ -27,17 +34,26 @@ export const requestPayment = async (
 	task: ITask,
 	amount: number,
 	projectId: string,
-	notes?: string
+	notes?: string,
+	requesterId?: string,
 ) => {
-	if (
-		task.assignedTo === null ||
-		task.assigneeId === null ||
-		task.assignedTo === undefined ||
-		task.assigneeId === undefined
-	) {
+	const requestedBy = requesterId ?? task.assignedTo ?? task.assigneeId;
+	if (!requestedBy) {
 		throw new Error("Task is not assigned to anyone.");
 	}
-	//make request
+
+	const approverId = await resolveTaskWorkflowApproverId(projectId);
+	if (!approverId) {
+		throw new Error(
+			"No supervisor or admin is assigned to approve this request.",
+		);
+	}
+	if (approverId === requestedBy) {
+		throw new Error(
+			"This project has no separate approver. Add a supervisor or admin to the project.",
+		);
+	}
+
 	const data = addRequest({
 		type: "PaymentRequest",
 		taskId: task.id,
@@ -49,8 +65,8 @@ export const requestPayment = async (
 		id: crypto.randomUUID(),
 		phaseId: task.phaseId,
 		materialId: null,
-		requestedBy: task.assignedTo,
-		requestedTo: task.assigneeId,
+		requestedBy,
+		requestedTo: approverId,
 		approvedBy: null,
 		approvedAt: null,
 	});
@@ -65,16 +81,26 @@ export const requestMaterial = async (
 	unitName: string,
 	unitCost: number,
 	projectId: string,
-	notes: string | undefined = undefined
+	notes: string | undefined = undefined,
+	requesterId?: string,
 ) => {
-	if (
-		task.assignedTo === null ||
-		task.assigneeId === null ||
-		task.assignedTo === undefined ||
-		task.assigneeId === undefined
-	) {
+	const requestedBy = requesterId ?? task.assignedTo ?? task.assigneeId;
+	if (!requestedBy) {
 		throw new Error("Task is not assigned to anyone.");
 	}
+
+	const approverId = await resolveTaskWorkflowApproverId(projectId);
+	if (!approverId) {
+		throw new Error(
+			"No supervisor or admin is assigned to approve this request.",
+		);
+	}
+	if (approverId === requestedBy) {
+		throw new Error(
+			"This project has no separate approver. Add a supervisor or admin to the project.",
+		);
+	}
+
 	const data = addRequest({
 		type: "MaterialRequest",
 		taskId: task.id,
@@ -92,8 +118,8 @@ export const requestMaterial = async (
 		id: crypto.randomUUID(),
 		phaseId: task.phaseId,
 		materialId: null,
-		requestedBy: task.assignedTo,
-		requestedTo: task.assigneeId,
+		requestedBy,
+		requestedTo: approverId,
 		approvedBy: null,
 		approvedAt: null,
 	});
@@ -105,33 +131,76 @@ export const requestMaterial = async (
 	return (await data).id;
 };
 
+function syncTaskInStore(task: ITaskDB) {
+	const store = useTaskStore.getState();
+	const taskWithRefs = {
+		...task,
+		materialIds: [] as string[],
+		assigneeId: task.assignedTo ?? null,
+	};
+
+	if (store.getTask(task.id)) {
+		store.updateTask(task.id, taskWithRefs);
+	} else {
+		store.addTask(taskWithRefs);
+	}
+
+	recomputePhaseAndProjectProgress();
+}
+
 export const handleTaskCompletion = async (taskId: string) => {
 	const profile = useProfileStore.getState().profile;
 	const task = getTaskFromStore(taskId);
 
-	// assigneeId is derived when loading tasks; persisted/zustand state may only have assignedTo
-	const approvalRecipient = task?.assigneeId ?? task?.assignedTo ?? null;
-
-	if (!profile || !task || !approvalRecipient) {
-		console.warn(
-			"[handleTaskCompletion] missing profile, task, or assignee",
-			{ taskId, hasTask: !!task, approvalRecipient }
-		);
+	if (!profile || !task) {
+		console.warn("[handleTaskCompletion] missing profile or task", {
+			taskId,
+			hasTask: !!task,
+		});
 		return undefined;
 	}
 
-	await updateTask(taskId, {
-		status: "Reviewing",
-	});
+	const requestedBy = profile.id;
+	if (!task.assignedTo && !task.assigneeId) {
+		console.warn("[handleTaskCompletion] task has no assignee", { taskId });
+		return undefined;
+	}
 
 	const projectId =
 		task.projectId || getProjectIdFromPhaseId(task.phaseId);
 	if (!projectId) {
 		console.warn(
 			"[handleTaskCompletion] could not resolve projectId",
-			task.phaseId
+			task.phaseId,
 		);
 		return undefined;
+	}
+
+	const approverId = await resolveTaskWorkflowApproverId(projectId);
+	if (!approverId) {
+		throw new Error(
+			"No supervisor or admin is assigned to approve task completion.",
+		);
+	}
+	if (approverId === requestedBy) {
+		throw new Error(
+			"This project has no separate approver. Add a supervisor or admin to the project.",
+		);
+	}
+
+	try {
+		const { task: updatedTask } =
+			await taskWorkflowDB.submitTaskForReview(taskId);
+		syncTaskInStore(updatedTask);
+	} catch (err) {
+		if (isTaskWorkflowRpcMissing(err, "submit_task_for_review")) {
+			throw new Error(
+				"Could not submit task for review. Run supabase-build/17_submit_task_for_review.sql in Supabase, then try again.",
+			);
+		}
+		throw err instanceof Error
+			? err
+			: new Error("Could not submit task for review.");
 	}
 
 	const data = addRequest({
@@ -145,8 +214,8 @@ export const handleTaskCompletion = async (taskId: string) => {
 		id: crypto.randomUUID(),
 		phaseId: task.phaseId,
 		materialId: null,
-		requestedBy: profile.id,
-		requestedTo: approvalRecipient,
+		requestedBy,
+		requestedTo: approverId,
 		approvedBy: null,
 		approvedAt: null,
 	});

@@ -35,6 +35,7 @@ import { useProfileStore } from "@/lib/store/profileStore";
 import { ITask } from "@/lib/types";
 import { set } from "date-fns";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 const MaterialModal = ({
 	isMaterialModalOpen,
@@ -99,27 +100,35 @@ const MaterialModal = ({
 		)
 			return;
 
-		const newRequestId = await requestMaterial(
-			selectedTask,
-			materials.find((m) => m.id === selectedMaterial)!,
-			units,
-			unitName,
-			unitCost,
-			projectId,
-			notes
-		);
+		try {
+			const newRequestId = await requestMaterial(
+				selectedTask,
+				materials.find((m) => m.id === selectedMaterial)!,
+				units,
+				unitName,
+				unitCost,
+				projectId,
+				notes,
+				user.id,
+			);
 
-		// Step 2: Upload all photos for that request
-		for (const file of photos) {
-			await addRequestPhoto(newRequestId, file, user.id as string);
+			for (const file of photos) {
+				await addRequestPhoto(newRequestId, file, user.id as string);
+			}
+			setIsMaterialModalOpen(false);
+			setSelectedMaterial("");
+			setUnits(0);
+			setUnitCost(0);
+			setTotalCost(0);
+			setNotes("");
+			setPhotos([]);
+		} catch (err) {
+			toast.error(
+				err instanceof Error
+					? err.message
+					: "Could not submit material request.",
+			);
 		}
-		setIsMaterialModalOpen(false);
-		setSelectedMaterial("");
-		setUnits(0);
-		setUnitCost(0);
-		setTotalCost(0);
-		setNotes("");
-		setPhotos([]);
 	};
 
 	const handleClose = () => {

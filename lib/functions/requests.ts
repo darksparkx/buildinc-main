@@ -1,5 +1,6 @@
 "use client";
 import { toast } from "sonner";
+import { recomputePhaseAndProjectProgress } from "./base";
 import {
 	getMaterialFromStore,
 	updateMaterial,
@@ -8,9 +9,15 @@ import { getPhaseFromStore } from "../middleware/phases";
 import { getAllProfilesFromStore } from "../middleware/profiles";
 import { getProjectFromStore, updateProject } from "../middleware/projects";
 import { updateRequest } from "../middleware/requests";
-import { getTask, getTaskFromStore, updateTask } from "../middleware/tasks";
+import { getTaskFromStore, updateTask } from "../middleware/tasks";
+import { useRequestStore } from "../store/requestStore";
+import { useTaskStore } from "../store/taskStore";
+import {
+	isTaskAssignmentRpcMissing,
+	taskAssignmentDB,
+} from "../supabase/db/taskAssignmentDB";
 import { describeCompletionBlockers, getPendingTaskWorkflowBlockersForCompletion } from "./taskCompletionBlockers";
-import { IProfile, IRequest } from "../types";
+import { IProfile, IRequest, ITaskDB } from "../types";
 
 /** Re-export for callers that already import from `requests`. */
 export { getPendingTaskWorkflowBlockersForCompletion } from "./taskCompletionBlockers";
@@ -32,33 +39,55 @@ export const getDetailsForRequest = (request: IRequest) => {
 	return request;
 };
 
+function syncTaskFromDb(task: ITaskDB) {
+	const store = useTaskStore.getState();
+	const taskWithRefs = {
+		...task,
+		materialIds: [] as string[],
+		assigneeId: task.assignedTo ?? null,
+	};
+
+	if (store.getTask(task.id)) {
+		store.updateTask(task.id, taskWithRefs);
+	} else {
+		store.addTask(taskWithRefs);
+	}
+
+	recomputePhaseAndProjectProgress();
+}
+
 export const handleAssigment = async (
 	request: IRequest,
 	profile: IProfile | null
 ) => {
-	if (!profile || profile.id !== request.requestedTo) return;
+	if (!profile || profile.id !== String(request.requestedTo)) {
+		throw new Error("Only the assigned user can accept this task.");
+	}
 
-	const task = await getTask(request.taskId ?? "");
-	if (!task) return;
+	if (!request.taskId) {
+		throw new Error("Invalid task assignment request.");
+	}
 
-	updateRequest(request.id, {
-		status: "Approved",
-		approvedAt: new Date(),
-		approvedBy: profile.id,
-	});
+	try {
+		const { task } = await taskAssignmentDB.acceptTaskAssignment(request.id);
 
-	updateTask(request.taskId || "", {
-		assignedTo:
-			typeof request.requestedTo === "object" &&
-			request.requestedTo !== null
-				? request.requestedTo
-				: request.requestedTo,
-		startDate: new Date(),
-		status: "Active",
-		endDate: new Date(
-			Date.now() + task.estimatedDuration! * 24 * 60 * 60 * 1000
-		),
-	});
+		useRequestStore.getState().updateRequest(request.id, {
+			status: "Approved",
+			approvedAt: new Date(),
+			approvedBy: profile.id,
+		});
+		syncTaskFromDb(task);
+		toast.success("Task assignment accepted.");
+	} catch (err) {
+		if (isTaskAssignmentRpcMissing(err)) {
+			throw new Error(
+				"Task assignment could not be approved. Run supabase-build/16_accept_task_assignment.sql in Supabase, then try again.",
+			);
+		}
+		throw err instanceof Error
+			? err
+			: new Error("Could not accept this task assignment.");
+	}
 };
 
 /** @returns Whether the task was completed (false if unauthorized or blocked by pending requests). */
@@ -149,9 +178,33 @@ export const handleReject = async (
 ) => {
 	if (!profile || profile.id !== String(request.requestedTo)) return;
 
+	const taskId = request.taskId;
+
+	if (request.type === "TaskAssignment" && taskId) {
+		try {
+			const { task } = await taskAssignmentDB.rejectTaskAssignment(
+				request.id,
+			);
+			useRequestStore.getState().updateRequest(request.id, {
+				status: "Rejected",
+			});
+			syncTaskFromDb(task);
+			toast.success("Task assignment declined.");
+		} catch (err) {
+			if (isTaskAssignmentRpcMissing(err)) {
+				throw new Error(
+					"Task assignment could not be declined. Run supabase-build/16_accept_task_assignment.sql in Supabase, then try again.",
+				);
+			}
+			throw err instanceof Error
+				? err
+				: new Error("Could not decline this task assignment.");
+		}
+		return;
+	}
+
 	await updateRequest(request.id, { status: "Rejected" });
 
-	const taskId = request.taskId;
 	if (!taskId) return;
 
 	switch (request.type) {
@@ -175,12 +228,6 @@ export const handleReject = async (
 			break;
 		}
 		case "TaskAssignment":
-			await updateTask(taskId, {
-				assignedTo: null,
-				startDate: null,
-				status: "Inactive",
-				endDate: null,
-			});
 			break;
 		default:
 			break;

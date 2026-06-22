@@ -29,6 +29,7 @@ import { ProjectProgressDisplay } from "./ProjectProgressDisplay";
 type Props = {
 	filteredProjects: IProject[];
 	admin: boolean;
+	canOpen?: boolean;
 	profileId?: string;
 	projectTotalCount: number;
 	hasActiveFilters: boolean;
@@ -60,12 +61,14 @@ function statusVariant(
 function ProjectMobileRow({
 	project,
 	admin,
+	canOpen,
 	showFinancials,
 	orgName,
 	onOpen,
 }: {
 	project: IProject;
 	admin: boolean;
+	canOpen: boolean;
 	showFinancials: boolean;
 	orgName: string;
 	onOpen: () => void;
@@ -78,13 +81,13 @@ function ProjectMobileRow({
 	return (
 		<button
 			type="button"
-			disabled={!admin}
+			disabled={!canOpen}
 			onClick={onOpen}
 			className={cn(
 				"flex w-full items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/60 p-4 text-left shadow-sm transition-colors",
-				admin
+				canOpen
 					? "hover:bg-primary/5 active:bg-primary/10"
-					: "cursor-default opacity-95"
+					: "cursor-default opacity-95",
 			)}
 		>
 			<div className="min-w-0 flex-1">
@@ -117,7 +120,7 @@ function ProjectMobileRow({
 					</p>
 				)}
 			</div>
-			{admin && (
+			{canOpen && (
 				<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
 			)}
 		</button>
@@ -127,12 +130,14 @@ function ProjectMobileRow({
 const ProjectTable = ({
 	filteredProjects,
 	admin,
+	canOpen = false,
 	profileId,
 	projectTotalCount,
 	hasActiveFilters,
 }: Props) => {
 	const router = useRouter();
 	const organisations = useOrganisationStore((s) => s.organisations);
+	const openDetails = canOpen || admin;
 
 	const orgNameById = useMemo(() => {
 		const map: Record<string, string> = {};
@@ -143,7 +148,7 @@ const ProjectTable = ({
 	}, [organisations]);
 
 	const handleClick = (project: IProject) => {
-		if (admin) router.push(`/projects/${project.id}`);
+		if (openDetails) router.push(`/projects/${project.id}`);
 	};
 
 	return (
@@ -153,7 +158,9 @@ const ProjectTable = ({
 				<CardDescription>
 					{admin
 						? "Select a row to open project details."
-						: "Projects you are assigned to."}
+						: openDetails
+							? "Select a project to open the task board and your work."
+							: "Projects you are assigned to."}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="px-0 pb-6 sm:px-6">
@@ -165,6 +172,7 @@ const ProjectTable = ({
 									<ProjectMobileRow
 										project={project}
 										admin={admin}
+										canOpen={openDetails}
 										showFinancials={canViewProjectFinancials(
 											profileId,
 											project,
@@ -228,7 +236,8 @@ const ProjectTable = ({
 												key={project.id}
 												className={cn(
 													"border-border/40",
-													admin && "cursor-pointer hover:bg-muted/40"
+													openDetails &&
+														"cursor-pointer hover:bg-muted/40",
 												)}
 												onClick={() => handleClick(project)}
 											>

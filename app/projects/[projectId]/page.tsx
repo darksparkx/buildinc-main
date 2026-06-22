@@ -8,6 +8,7 @@ import { useProjectStore } from "@/lib/store/projectStore";
 import { use, useEffect } from "react";
 import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useRouter } from "next/navigation";
 import { hydrateProjectBoardData } from "@/lib/middleware/phases";
 
@@ -19,6 +20,8 @@ export default function Page({
 	const { projectId } = use(params);
 
 	const profile = useProfileStore((state) => state.profile);
+	const ownerShell = useUsesOwnerShell(profile);
+	const router = useRouter();
 
 	const { setprojectDetails } = useprojectDetailStore();
 	const organisations = useOrganisationStore((state) => state.organisations);
@@ -27,6 +30,12 @@ export default function Page({
 	const organisation = Object.values(organisations).find(
 		(org) => org.id === project?.orgId
 	);
+	useEffect(() => {
+		if (profile && !ownerShell) {
+			router.replace("/workspace");
+		}
+	}, [profile, ownerShell, router]);
+
 	useEffect(() => {
 		if (project && organisation) {
 			setprojectDetails(project, organisation);
@@ -40,13 +49,15 @@ export default function Page({
 		});
 	}, [projectId, project?.id]);
 
-	const router = useRouter();
 	if (!profile) {
 		// redirect and don't render until profile exists
 		window.location.href = "/";
 		window.location.reload();
 		return null;
 	}
+
+	if (!ownerShell) return <LoadingSpinner />;
+
 	if (!project) return <LoadingSpinner />;
 
 	return <ProjectDetails />;

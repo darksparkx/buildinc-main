@@ -1,9 +1,27 @@
 // lib/middleware/projectMembers.ts
 import { projectMemberDB } from "@/lib/supabase/db/projectMemberDB";
+import { projectDB } from "@/lib/supabase/db/projectDB";
 import { profileDB } from "@/lib/supabase/db/profileDB";
 import { subscriptionLimitErrorMessage } from "@/lib/billing/subscriptionLimitErrorMessage";
+import { notifyRemovedFromProject } from "./membershipNotifications";
 import { IProjectProfile, IProjectMemberDB, IProfileDB } from "../types";
 import { useProjectMemberStore } from "@/lib/store/projectMemberStore";
+
+function rethrowMemberError(error: unknown, context: string): never {
+	const mapped = subscriptionLimitErrorMessage(error);
+	if (mapped) {
+		throw new Error(mapped);
+	}
+	const message =
+		error &&
+		typeof error === "object" &&
+		"message" in error &&
+		typeof (error as { message: unknown }).message === "string"
+			? (error as { message: string }).message
+			: context;
+	console.error(context + ":", error);
+	throw new Error(message);
+}
 
 // Helper function to combine member info with profile data
 async function createProjectProfile(
@@ -38,12 +56,7 @@ export async function addProjectMember_DBONLY(
 
 		return projectProfile;
 	} catch (error) {
-		const mapped = subscriptionLimitErrorMessage(error);
-		if (mapped) {
-			throw new Error(mapped);
-		}
-		console.error("Error adding project member:", error);
-		throw error;
+		rethrowMemberError(error, "Error adding project member");
 	}
 }
 
@@ -55,22 +68,27 @@ export async function addProjectMember(
 		const projectProfile = await createProjectProfile(result);
 		return projectProfile;
 	} catch (error) {
-		const mapped = subscriptionLimitErrorMessage(error);
-		if (mapped) {
-			throw new Error(mapped);
-		}
-		console.error("Error adding project member:", error);
-		throw error;
+		rethrowMemberError(error, "Error adding project member");
 	}
 }
 
 export async function removeProjectMember(id: string, projectId: string) {
 	try {
+		const [memberRow, project] = await Promise.all([
+			projectMemberDB.getProjectMember(id),
+			projectDB.getProject(projectId),
+		]);
+
 		await projectMemberDB.removeProjectMember(id);
 
-		// Remove from store
 		const store = useProjectMemberStore.getState();
-		store.removeProjectMember(projectId, id);
+		store.removeProjectMember(projectId, memberRow.userId);
+
+		void notifyRemovedFromProject({
+			recipientId: memberRow.userId,
+			projectId,
+			projectName: project.name,
+		});
 
 		return {
 			success: true,
@@ -106,7 +124,6 @@ export async function getProjectMembersByProjectId(
 	projectId: string
 ): Promise<IProjectProfile[]> {
 	try {
-		// First check if we have them in the store
 		const store = useProjectMemberStore.getState();
 		const cachedMembers = store.getProjectMembers(projectId);
 
@@ -114,18 +131,42 @@ export async function getProjectMembersByProjectId(
 			return cachedMembers;
 		}
 
-		// If not in store, fetch from DB
-		const members = await projectMemberDB.getProjectMembers(projectId);
-		const projectProfiles = await Promise.all(
-			members.map((member) => createProjectProfile(member))
-		);
+		return refreshProjectMembers(projectId);
+	} catch (error) {
+		console.error("Error getting project members:", error);
+		throw error;
+	}
+}
 
-		// Update store
+/** Always loads members from the DB and replaces the store entry for this project. */
+export async function refreshProjectMembers(
+	projectId: string
+): Promise<IProjectProfile[]> {
+	try {
+		const members = await projectMemberDB.getProjectMembers(projectId);
+		const projectProfiles = (
+			await Promise.all(
+				members.map(async (member) => {
+					try {
+						return await createProjectProfile(member);
+					} catch (error) {
+						console.error(
+							"Error fetching profile for project member:",
+							member.userId,
+							error,
+						);
+						return null;
+					}
+				}),
+			)
+		).filter((profile): profile is IProjectProfile => profile !== null);
+
+		const store = useProjectMemberStore.getState();
 		store.setProjectMembers(projectId, projectProfiles);
 
 		return projectProfiles;
 	} catch (error) {
-		console.error("Error getting project members:", error);
+		console.error("Error refreshing project members:", error);
 		throw error;
 	}
 }

@@ -22,31 +22,29 @@ import {
 } from "@/components/base/ui/table";
 import { TabsContent } from "@/components/base/ui/tabs";
 import { formatDate } from "@/lib/functions/utils";
+import { useProjectMembers } from "@/lib/hooks/useProjectMembers";
 import { removeProjectMember } from "@/lib/middleware/projectMembers";
-import { IOrganisationProfile, IProjectProfile } from "@/lib/types";
+import { IProjectProfile } from "@/lib/types";
 import { Mail, MoreHorizontal, UserCircle } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import AddMemberModal from "./Modals/AddMemberModal";
 
 const PAGE_SIZE = 10;
 
 export const Members = ({
-	members,
-	organisationMembers,
-	teamMembers,
 	projectId,
 	projectName,
+	orgId,
 	setChangeRole,
 	setChangeRoleModal,
 	setChangeRoleUser,
 	setChangeRoleId,
 	setChangeRoleCanSeeBudget,
 }: {
-	members: IProjectProfile[];
-	organisationMembers: IOrganisationProfile[];
-	teamMembers: IProjectProfile[];
 	projectId: string;
 	projectName: string;
+	orgId: string;
 	setChangeRole: (role: string) => void;
 	setChangeRoleModal: (open: boolean) => void;
 	setChangeRoleUser: (user: string) => void;
@@ -54,7 +52,9 @@ export const Members = ({
 	setChangeRoleCanSeeBudget: (value: boolean) => void;
 }) => {
 	const [page, setPage] = useState(1);
+	const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
+	const members = useProjectMembers(projectId);
 	const startIndex = (page - 1) * PAGE_SIZE;
 	const endIndex = startIndex + PAGE_SIZE;
 	const paginatedMembers = members.slice(startIndex, endIndex);
@@ -73,11 +73,24 @@ export const Members = ({
 		setChangeRoleModal(true);
 	};
 
-	const handleRemoveProjectMember = (member: IProjectProfile) => {
+	const handleRemoveProjectMember = async (member: IProjectProfile) => {
 		const linkId = member.memberInfo?.id;
 		if (!linkId) return;
-		removeProjectMember(linkId, projectId);
-		window.location.reload();
+
+		setRemovingMemberId(member.id);
+		try {
+			await removeProjectMember(linkId, projectId);
+			toast.success(`${member.name ?? "Member"} removed from the project.`);
+			if (page > 1 && paginatedMembers.length === 1) {
+				setPage((p) => Math.max(1, p - 1));
+			}
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Could not remove this member.",
+			);
+		} finally {
+			setRemovingMemberId(null);
+		}
 	};
 
 	return (
@@ -91,8 +104,7 @@ export const Members = ({
 						</CardDescription>
 					</div>
 					<AddMemberModal
-						organisationMembers={organisationMembers}
-						teamMembers={teamMembers}
+						orgId={orgId}
 						projectId={projectId}
 						projectName={projectName}
 					/>
@@ -152,11 +164,14 @@ export const Members = ({
 													{member.memberInfo?.role !== "Admin" && (
 														<DropdownMenuItem
 															className="text-destructive focus:text-destructive"
+															disabled={removingMemberId === member.id}
 															onClick={() =>
 																handleRemoveProjectMember(member)
 															}
 														>
-															Remove member
+															{removingMemberId === member.id
+																? "Removing…"
+																: "Remove member"}
 														</DropdownMenuItem>
 													)}
 												</DropdownMenuContent>
@@ -224,11 +239,14 @@ export const Members = ({
 															{member.memberInfo?.role !== "Admin" && (
 																<DropdownMenuItem
 																	className="text-destructive focus:text-destructive"
+																	disabled={removingMemberId === member.id}
 																	onClick={() =>
 																		handleRemoveProjectMember(member)
 																	}
 																>
-																	Remove member
+																	{removingMemberId === member.id
+																		? "Removing…"
+																		: "Remove member"}
 																</DropdownMenuItem>
 															)}
 														</DropdownMenuContent>

@@ -21,11 +21,19 @@ import {
 	listUnreadMentionNotifications,
 	markMentionNotificationRead,
 } from "@/lib/middleware/commentMentions";
+import {
+	getUnreadMembershipNotificationCount,
+	listUnreadMembershipNotifications,
+	markMembershipNotificationRead,
+	membershipNotificationSubtitle,
+	membershipNotificationTitle,
+} from "@/lib/middleware/membershipNotifications";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useRequestStore } from "@/lib/store/requestStore";
 import { useTaskStore } from "@/lib/store/taskStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base/ui/tabs";
-import { ICommentMentionNotificationDB, IProfile, IRequest } from "@/lib/types";
+import { ICommentMentionNotificationDB, IMembershipNotificationDB, IProfile, IRequest } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { Bell, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -43,6 +51,7 @@ function TabCount({ n }: { n: number }) {
 type InboxTab = "inbox" | "sent" | "history";
 
 export function InboxBell({ profile }: { profile: IProfile }) {
+	const ownerShell = useUsesOwnerShell(profile);
 	const requestsRecord = useRequestStore((s) => s.requests);
 	const [open, setOpen] = useState(false);
 	const [inboxTab, setInboxTab] = useState<InboxTab>("inbox");
@@ -53,7 +62,11 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 	const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 	const [comment, setComment] = useState("");
 	const [mentions, setMentions] = useState<ICommentMentionNotificationDB[]>([]);
+	const [membershipNotifications, setMembershipNotifications] = useState<
+		IMembershipNotificationDB[]
+	>([]);
 	const [mentionBadgeCount, setMentionBadgeCount] = useState(0);
+	const [membershipBadgeCount, setMembershipBadgeCount] = useState(0);
 
 	const requests = useMemo(
 		() => Object.values(requestsRecord),
@@ -70,16 +83,22 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 		[profile.id, requests],
 	);
 
-	const badgeTotal = actionCount + mentionBadgeCount;
+	const badgeTotal = actionCount + mentionBadgeCount + membershipBadgeCount;
 
 	useEffect(() => {
 		let cancelled = false;
 		(async () => {
 			try {
-				const n = await getUnreadMentionNotificationCount(profile.id);
-				if (!cancelled) setMentionBadgeCount(n);
+				const [mentionCount, membershipCount] = await Promise.all([
+					getUnreadMentionNotificationCount(profile.id),
+					getUnreadMembershipNotificationCount(profile.id),
+				]);
+				if (!cancelled) {
+					setMentionBadgeCount(mentionCount);
+					setMembershipBadgeCount(membershipCount);
+				}
 			} catch (e) {
-				console.error("[InboxBell] mention count:", e);
+				console.error("[InboxBell] notification counts:", e);
 			}
 		})();
 		return () => {
@@ -91,8 +110,12 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 		if (!open) {
 			void (async () => {
 				try {
-					const n = await getUnreadMentionNotificationCount(profile.id);
-					setMentionBadgeCount(n);
+					const [mentionCount, membershipCount] = await Promise.all([
+						getUnreadMentionNotificationCount(profile.id),
+						getUnreadMembershipNotificationCount(profile.id),
+					]);
+					setMentionBadgeCount(mentionCount);
+					setMembershipBadgeCount(membershipCount);
 				} catch {
 					/* ignore */
 				}
@@ -108,14 +131,23 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 			setRefreshing(true);
 			try {
 				await getRequestsByUserId(profile.id);
-				const m = await listUnreadMentionNotifications(profile.id);
+				const [m, membership] = await Promise.all([
+					listUnreadMentionNotifications(profile.id),
+					listUnreadMembershipNotifications(profile.id),
+				]);
 				if (cancelled) return;
 				setMentions(m);
+				setMembershipNotifications(membership);
 				setMentionBadgeCount(m.length);
+				setMembershipBadgeCount(membership.length);
 
 				const reqs = Object.values(useRequestStore.getState().requests);
 				const s = partitionInboxRequests(profile.id, reqs);
-				if (m.length > 0 || s.actionRequired.length > 0)
+				if (
+					m.length > 0 ||
+					membership.length > 0 ||
+					s.actionRequired.length > 0
+				)
 					setInboxTab("inbox");
 				else if (s.waitingOnOthers.length > 0) setInboxTab("sent");
 				else if (s.recent.length > 0) setInboxTab("history");
@@ -130,6 +162,47 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 			cancelled = true;
 		};
 	}, [open, profile.id]);
+
+	const renderMembershipRows = () =>
+		membershipNotifications.map((n) => {
+			const actor =
+				getAllProfilesFromStore().find((p) => p.id === n.actorId)?.name ??
+				"Someone";
+			const href =
+				n.kind === "removed_from_organisation" && n.orgId
+					? ownerShell
+						? "/organisations"
+						: "/workspace"
+					: n.kind === "removed_from_project" && n.projectId
+						? ownerShell
+							? `/projects/${n.projectId}`
+							: "/workspace"
+						: "/dashboard";
+			return (
+				<Link
+					key={n.id}
+					href={href}
+					onClick={() => {
+						void markMembershipNotificationRead(n.id, profile.id);
+						setMembershipBadgeCount((c) => Math.max(0, c - 1));
+						setOpen(false);
+					}}
+					className="flex w-full flex-col gap-0.5 rounded-lg px-2.5 py-2.5 text-left text-sm transition-colors hover:bg-muted/80 dark:hover:bg-muted/50"
+				>
+					<span className="font-medium leading-snug text-foreground">
+						{membershipNotificationTitle(n)}
+					</span>
+					<span className="line-clamp-2 text-xs text-muted-foreground">
+						{membershipNotificationSubtitle(n, actor)}
+					</span>
+					<span className="text-[13px] text-muted-foreground tabular-nums">
+						{formatDistanceToNow(new Date(n.created_at), {
+							addSuffix: true,
+						})}
+					</span>
+				</Link>
+			);
+		});
 
 	const renderMentionRows = () =>
 		mentions.map((n) => {
@@ -206,7 +279,8 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 		sections.actionRequired.length === 0 &&
 		sections.waitingOnOthers.length === 0 &&
 		sections.recent.length === 0 &&
-		mentionBadgeCount === 0;
+		mentionBadgeCount === 0 &&
+		membershipBadgeCount === 0;
 
 	const emptyTabCopy = {
 		inbox: "Nothing needs your approval right now.",
@@ -275,7 +349,8 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 										<TabCount
 											n={
 												sections.actionRequired.length +
-												mentionBadgeCount
+												mentionBadgeCount +
+												membershipBadgeCount
 											}
 										/>
 									</TabsTrigger>
@@ -296,6 +371,11 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 								</TabsList>
 								<TabsContent value="inbox" className="mt-0" role="list">
 									<div className="max-h-[min(65vh,21rem)] overflow-y-auto px-1.5 pb-2 pt-1">
+										{membershipNotifications.length > 0 ? (
+											<div className="mb-1 space-y-0.5">
+												{renderMembershipRows()}
+											</div>
+										) : null}
 										{mentions.length > 0 ? (
 											<div className="mb-1 space-y-0.5">
 												{renderMentionRows()}
@@ -304,7 +384,8 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 										{sections.actionRequired.length > 0
 											? renderRows(sections.actionRequired)
 											: null}
-										{mentions.length === 0 &&
+										{membershipNotifications.length === 0 &&
+										mentions.length === 0 &&
 										sections.actionRequired.length === 0 ? (
 											<p className="mx-2 rounded-lg border border-dashed border-border/60 bg-muted/15 px-3 py-8 text-center text-sm text-muted-foreground">
 												{emptyTabCopy.inbox}
@@ -344,7 +425,9 @@ export function InboxBell({ profile }: { profile: IProfile }) {
 							className="h-9 w-full rounded-lg text-xs text-muted-foreground hover:bg-muted/70 hover:text-foreground"
 							asChild
 						>
-							<Link href="/approvals">Open approvals</Link>
+							<Link href={ownerShell ? "/approvals" : "/tasks"}>
+								{ownerShell ? "Open approvals" : "Open tasks"}
+							</Link>
 						</Button>
 					</div>
 				</PopoverContent>

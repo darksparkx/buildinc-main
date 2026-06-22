@@ -13,7 +13,7 @@ import { getAllProfiles } from "@/lib/middleware/profiles";
 import { getProjectMembersByProjectId } from "@/lib/middleware/projectMembers";
 import { getMemberProjects, getUserProjects } from "@/lib/middleware/projects";
 import { getRequestsByUserId } from "@/lib/middleware/requests";
-import { getPhaseTasks } from "@/lib/middleware/tasks";
+import { getPhaseTasks, getUserTasks } from "@/lib/middleware/tasks";
 import { usesOwnerShell } from "@/lib/billing/ownerShell";
 import { parseSubscriberEntitlementsRow } from "@/lib/billing/parseSubscriberEntitlementsRow";
 import { useOrganisationStore } from "@/lib/store/organisationStore";
@@ -64,6 +64,7 @@ async function loadUserData(userProfile: IProfile) {
 	await Promise.all([
 		getMemberOrganisations(userProfile.id),
 		getMemberProjects(userProfile.id),
+		getUserTasks(userProfile.id),
 	]);
 }
 

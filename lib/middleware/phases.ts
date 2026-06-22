@@ -136,7 +136,7 @@ export async function getProjectPhases(projectId: string): Promise<IPhase[]> {
 		}));
 
 		const store = usePhaseStore.getState();
-		store.setPhases(phasesWithReferences);
+		store.setProjectPhases(projectId, phasesWithReferences);
 
 		return phasesWithReferences;
 	} catch (error) {
@@ -198,11 +198,15 @@ export function getPhaseFromStore(id: string): IPhase | undefined {
 	}
 }
 
-/** Phases + tasks + members + materials for the task board. Call when opening project detail (StoreHydrator only does this for admin bulk load). */
+/** Phases + tasks + materials for the task board. Call when opening project detail (StoreHydrator only does this for admin bulk load). */
 export async function hydrateProjectBoardData(
 	projectId: string
 ): Promise<void> {
-	await getProjectMembersByProjectId(projectId);
+	// Members load separately via useProjectMembers; don't block the board on member fetch errors.
+	void getProjectMembersByProjectId(projectId).catch((error) => {
+		console.error("Error loading project members for board hydrate:", error);
+	});
+
 	const phases = await getProjectPhases(projectId);
 	await Promise.all(
 		phases.map(async (phase) => {

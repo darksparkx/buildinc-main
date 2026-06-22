@@ -24,6 +24,7 @@ import { getProjectMembersByProjectId } from "@/lib/middleware/projectMembers";
 import { getProject } from "@/lib/middleware/projects";
 import { getTask } from "@/lib/middleware/tasks";
 import { useUrlQueryTab } from "@/lib/hooks/useUrlQueryTab";
+import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { useprojectDetailStore } from "@/lib/store/projectDetailStore";
 import { useTaskStore } from "@/lib/store/taskStore";
@@ -70,6 +71,7 @@ function TaskPageContent() {
 	const taskId = typeof params.taskId === "string" ? params.taskId : "";
 
 	const profile = useProfileStore((s) => s.profile);
+	const ownerShell = useUsesOwnerShell(profile);
 	const updateprojectDetails = useprojectDetailStore(
 		(s) => s.updateprojectDetails,
 	);
@@ -145,19 +147,26 @@ function TaskPageContent() {
 		if (!selectedTask || !project) {
 			return [] as { label: string; href?: string }[];
 		}
-		const href = `/projects/${selectedTask.projectId}`;
 		const projLabel =
 			project.name?.trim() ||
 			selectedTask.projectName?.trim() ||
 			"Project";
-		const list: { label: string; href?: string }[] = [
-			{ label: "Projects", href: "/projects" },
-			{ label: projLabel, href: href },
-		];
+		const list: { label: string; href?: string }[] = ownerShell
+			? [
+					{ label: "Projects", href: "/projects" },
+					{
+						label: projLabel,
+						href: `/projects/${selectedTask.projectId}`,
+					},
+				]
+			: [
+					{ label: "Workspace", href: "/workspace" },
+					{ label: projLabel },
+				];
 		if (phaseName) list.push({ label: phaseName });
 		list.push({ label: selectedTask.name });
 		return list;
-	}, [selectedTask, project, phaseName]);
+	}, [selectedTask, project, phaseName, ownerShell]);
 
 	if (!profile?.id) {
 		return <LoadingSpinner />;
@@ -183,7 +192,9 @@ function TaskPageContent() {
 		return <LoadingSpinner />;
 	}
 
-	const projectHref = `/projects/${selectedTask.projectId}`;
+	const projectHref = ownerShell
+		? `/projects/${selectedTask.projectId}`
+		: undefined;
 	const startLabel = selectedTask.startDate
 		? formatCalendarDate(selectedTask.startDate)
 		: null;
@@ -267,24 +278,38 @@ function TaskPageContent() {
 								<h1 className="text-pretty text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.35rem] lg:leading-[1.12]">
 									{selectedTask.name}
 								</h1>
-								<Link
-									href={projectHref}
-									className="group inline-flex max-w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5 transition-colors hover:border-primary/35 hover:bg-primary/[0.07] sm:inline-flex sm:w-fit dark:hover:bg-primary/10"
-								>
-									<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/20 dark:bg-primary/20">
-										<FolderKanban className="h-4 w-4" aria-hidden />
-									</span>
-									<span className="min-w-0 text-left">
-										<span className={cn(kicker, "block")}>Project</span>
-										<span className="flex items-center gap-1 font-semibold text-foreground underline decoration-border/70 decoration-1 underline-offset-2 group-hover:decoration-primary/50">
-											<span className="truncate">{displayProjectName}</span>
-											<ChevronRight
-												className="h-4 w-4 shrink-0 opacity-50"
-												aria-hidden
-											/>
+								{ownerShell ? (
+									<Link
+										href={projectHref!}
+										className="group inline-flex max-w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5 transition-colors hover:border-primary/35 hover:bg-primary/[0.07] sm:inline-flex sm:w-fit dark:hover:bg-primary/10"
+									>
+										<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/20 dark:bg-primary/20">
+											<FolderKanban className="h-4 w-4" aria-hidden />
 										</span>
-									</span>
-								</Link>
+										<span className="min-w-0 text-left">
+											<span className={cn(kicker, "block")}>Project</span>
+											<span className="flex items-center gap-1 font-semibold text-foreground underline decoration-border/70 decoration-1 underline-offset-2 group-hover:decoration-primary/50">
+												<span className="truncate">{displayProjectName}</span>
+												<ChevronRight
+													className="h-4 w-4 shrink-0 opacity-50"
+													aria-hidden
+												/>
+											</span>
+										</span>
+									</Link>
+								) : (
+									<div className="inline-flex max-w-full items-center gap-3 rounded-xl border border-border/60 bg-muted/25 px-3 py-2.5 sm:inline-flex sm:w-fit">
+										<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary ring-1 ring-primary/20 dark:bg-primary/20">
+											<FolderKanban className="h-4 w-4" aria-hidden />
+										</span>
+										<span className="min-w-0 text-left">
+											<span className={cn(kicker, "block")}>Project</span>
+											<span className="truncate font-semibold text-foreground">
+												{displayProjectName}
+											</span>
+										</span>
+									</div>
+								)}
 							</div>
 
 							{(startLabel || dueLabel) && (

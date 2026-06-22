@@ -1,6 +1,7 @@
 // lib/supabase/realtimeClient.ts
 import { createClient } from "./client";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 // ✅ Import your stores here
 import { useTaskStore } from "@/lib/store/taskStore";
@@ -11,6 +12,7 @@ import { useMaterialStore } from "@/lib/store/materialStore";
 import { useRequestStore } from "@/lib/store/requestStore";
 import { useOrganisationMemberStore } from "@/lib/store/organisationMemberStore";
 import { useProjectMemberStore } from "@/lib/store/projectMemberStore";
+import { applyMembershipRemovalFromNotification, applyRemovedFromOrganisationLocally, applyRemovedFromProjectLocally } from "@/lib/functions/membershipRemovalLocalState";
 import { profileDB } from "@/lib/supabase/db/profileDB";
 import { recomputePhaseAndProjectProgress } from "../functions/base";
 import { useProjectTemplateStore } from "../store/projectTemplateStore";
@@ -53,7 +55,11 @@ function createChannel(
 				}
 			}
 		)
-		.subscribe();
+		.subscribe((status, err) => {
+			if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+				console.error(`[Realtime] ${table} channel ${status}:`, err);
+			}
+		});
 
 	activeChannels.push(channel);
 	return channel;
@@ -138,25 +144,42 @@ export function initRealtimeListeners(profile: {
 				.deleteMaterialPricing?.(materialPricing.id)
 	);
 
-	// 🟢 Requests (user-specific listener)
-	createChannel(
-		"requests",
-		(request) => useRequestStore.getState().addRequest?.(request),
-		(request) =>
-			useRequestStore.getState().updateRequest?.(request.id, request),
-		(request) => useRequestStore.getState().deleteRequest?.(request.id),
-		// 🔍 Filter so only relevant requests trigger updates
-		`requestedTo=eq.${profile.id}`
-	);
+	// 🟢 Requests — no column filter (RLS scopes events; filters need REPLICA IDENTITY FULL).
+	const userId = profile.id;
+	const requestAppliesToUser = (request: {
+		requestedTo?: string;
+		requestedBy?: string;
+	}) =>
+		request.requestedTo === userId || request.requestedBy === userId;
 
-	// Optional: If you also want realtime for requests *sent by* the user
 	createChannel(
 		"requests",
-		(request) => useRequestStore.getState().addRequest?.(request),
-		(request) =>
-			useRequestStore.getState().updateRequest?.(request.id, request),
-		(request) => useRequestStore.getState().deleteRequest?.(request.id),
-		`requestedBy=eq.${profile.id}`
+		(request) => {
+			if (!requestAppliesToUser(request)) return;
+			useRequestStore.getState().addRequest?.(request);
+			if (
+				request.requestedTo === userId &&
+				request.type === "JoinOrganisation"
+			) {
+				const name =
+					request.requestData?.organisationName ?? "an organisation";
+				toast.info(`Organisation invitation · ${name}`);
+			} else if (
+				request.requestedTo === userId &&
+				request.type === "JoinProject"
+			) {
+				const name = request.requestData?.projectName ?? "a project";
+				toast.info(`Project invitation · ${name}`);
+			}
+		},
+		(request) => {
+			if (!requestAppliesToUser(request)) return;
+			useRequestStore.getState().updateRequest?.(request.id, request);
+		},
+		(request) => {
+			if (!requestAppliesToUser(request)) return;
+			useRequestStore.getState().deleteRequest?.(request.id);
+		},
 	);
 
 	// Project Templates
@@ -204,10 +227,13 @@ export function initRealtimeListeners(profile: {
 			}
 		},
 		(member) => {
-			useOrganisationMemberStore
-				.getState()
-				.removeOrganisationMember(member.orgId, member.id);
-			// console.log("[Realtime] Org member removed:", member);
+			if (member.userId === userId) {
+				applyRemovedFromOrganisationLocally(member.orgId);
+			} else {
+				useOrganisationMemberStore
+					.getState()
+					.removeOrganisationMember(member.orgId, member.userId);
+			}
 		}
 	);
 
@@ -242,11 +268,33 @@ export function initRealtimeListeners(profile: {
 			}
 		},
 		(member) => {
-			useProjectMemberStore
-				.getState()
-				.removeProjectMember(member.projectId, member.id);
-			// console.log("[Realtime] Project member removed:", member);
+			if (member.userId === userId) {
+				applyRemovedFromProjectLocally(member.projectId);
+			} else {
+				useProjectMemberStore
+					.getState()
+					.removeProjectMember(member.projectId, member.userId);
+			}
 		}
+	);
+
+	const membershipNotificationAppliesToUser = (notification: {
+		recipientId?: string;
+	}) => notification.recipientId === userId;
+
+	createChannel(
+		"membership_notifications",
+		(notification) => {
+			if (!membershipNotificationAppliesToUser(notification)) return;
+			const label =
+				notification.kind === "removed_from_organisation"
+					? `Removed from ${notification.entityName ?? "an organisation"}`
+					: `Removed from ${notification.entityName ?? "a project"}`;
+			toast.info(label);
+			applyMembershipRemovalFromNotification(notification);
+		},
+		() => {},
+		() => {},
 	);
 }
 

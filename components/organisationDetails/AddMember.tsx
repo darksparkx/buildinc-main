@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/base/ui/button";
 import {
 	Dialog,
@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/base/ui/scroll-area";
 import { UserPlus } from "lucide-react";
 import { IOrganisation, IProfile } from "@/lib/types";
 import { getAllProfilesFromStore } from "@/lib/middleware/profiles";
+import { useOrganisationMembers } from "@/lib/hooks/useOrganisationMembers";
 import { useProfileStore } from "@/lib/store/profileStore";
 import { addMember } from "@/lib/functions/organisationDetails";
 import {
@@ -36,8 +37,11 @@ const AddMember = ({ organisation }: Props) => {
 	const [selectedUser, setSelectedUser] = useState<IProfile | null>(null);
 	const [loading, setLoading] = useState(false);
 	const { allProfiles } = useProfileStore();
-
-	const orgMemberIds = organisation.memberIds;
+	const organisationMembers = useOrganisationMembers(organisation.id);
+	const orgMemberIds = useMemo(
+		() => organisationMembers.map((member) => member.id),
+		[organisationMembers],
+	);
 	// Fetch all users initially
 	useEffect(() => {
 		const fetchUsers = () => {
@@ -55,7 +59,7 @@ const AddMember = ({ organisation }: Props) => {
 			}
 		};
 		if (isOpen) fetchUsers();
-	}, [isOpen]);
+	}, [isOpen, allProfiles, orgMemberIds]);
 
 	// Search users
 	useEffect(() => {
@@ -77,22 +81,30 @@ const AddMember = ({ organisation }: Props) => {
 			}
 		}, 300);
 		return () => clearTimeout(timeout);
-	}, [searchQuery]);
+	}, [searchQuery, allProfiles, orgMemberIds]);
 
-	const handleAdd = () => {
+	const handleAdd = async () => {
 		if (!selectedUser) return;
-		toast.info("Sending Join Request...");
-		addMember(
-			organisation.id,
-			organisation.name,
-			selectedUser,
-			organisation.owner
-		);
-		setIsOpen(false);
-		setSelectedUser(null);
-		setSearchQuery("");
-		setLoading(false);
-		toast.success("Request Sent Succesfully.");
+		setLoading(true);
+		toast.info("Sending join request…");
+		try {
+			await addMember(
+				organisation.id,
+				organisation.name,
+				selectedUser,
+				organisation.owner,
+			);
+			toast.success("Invitation sent.");
+			setIsOpen(false);
+			setSelectedUser(null);
+			setSearchQuery("");
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Failed to send invitation.",
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	return (

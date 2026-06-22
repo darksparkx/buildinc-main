@@ -17,8 +17,8 @@ import OrgMembers from "./OrgMembers";
 import OrgSettings from "./OrgSettings";
 import ProjectTable from "../projects/ProjectTable";
 import { TabsTriggerList } from "@/components/base/general/TabsTriggerList";
-import { getOrganisationMembersFromStore } from "@/lib/middleware/organisationMembers";
 import { getOrganisationProjectsFromStore } from "@/lib/middleware/projects";
+import { useOrganisationMembers } from "@/lib/hooks/useOrganisationMembers";
 import ChangeRoleModal from "./ChangeRoleModal";
 import { useUsesOwnerShell } from "@/lib/hooks/useUsesOwnerShell";
 import { useProfileStore } from "@/lib/store/profileStore";
@@ -249,7 +249,7 @@ const Header = ({ organisation }: { organisation: IOrganisation }) => {
 };
 
 const Summary = ({ organisation }: { organisation: IOrganisation }) => {
-	const members = getOrganisationMembersFromStore(organisation.id).length ?? 0;
+	const members = useOrganisationMembers(organisation.id).length;
 	const projectCount =
 		getOrganisationProjectsFromStore(organisation.id).length ?? 0;
 

@@ -1,8 +1,9 @@
 "use client";
-import Projects from "@/components/projects/Projects";
+import MemberWorkspace from "@/components/workspace/MemberWorkspace";
 import LoadingSpinner from "@/components/base/layout/LoadingSpinner";
 import { useRequestsSync } from "@/lib/hooks/useRequestsSync";
 import { useProfileStore } from "@/lib/store/profileStore";
+import { useOrganisationStore } from "@/lib/store/organisationStore";
 import { useProjectStore } from "@/lib/store/projectStore";
 import { useRequestStore } from "@/lib/store/requestStore";
 import { usePhaseStore } from "@/lib/store/phaseStore";
@@ -17,25 +18,27 @@ export default function Page() {
 
 	const { projects } = useProjectStore();
 	const { phases } = usePhaseStore();
+	const organisations = useOrganisationStore((state) => state.organisations);
 	const requests = Object.values(useRequestStore((state) => state.requests));
 	const ownerShell = useUsesOwnerShell(profile);
 
 	useEffect(() => {
-		if (profile && !ownerShell) {
-			router.replace("/workspace");
+		if (profile && ownerShell) {
+			router.replace("/projects");
 		}
 	}, [profile, ownerShell, router]);
 
 	if (!profile || !projects) return <LoadingSpinner />;
 
-	if (!ownerShell) return <LoadingSpinner />;
+	if (ownerShell) return <LoadingSpinner />;
 
 	return (
-		<Projects
+		<MemberWorkspace
+			organisations={Object.values(organisations)}
 			projects={Object.values(projects)}
 			phases={Object.values(phases)}
-			admin
 			requests={requests}
+			profileId={profile.id}
 		/>
 	);
 }

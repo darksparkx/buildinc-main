@@ -1,6 +1,8 @@
 "use client";
 
 import { runSessionStoreLoad } from "@/lib/data/runSessionStoreLoad";
+import { startMembershipNotificationSync } from "@/lib/data/syncMembershipNotifications";
+import { startRequestSync } from "@/lib/data/syncRequests";
 import { parseSubscriberEntitlementsRow } from "@/lib/billing/parseSubscriberEntitlementsRow";
 import { useEntitlementsStore } from "@/lib/store/entitlementsStore";
 import { useProfileStore } from "@/lib/store/profileStore";
@@ -56,7 +58,13 @@ export const StoreHydrator = ({
 			}
 		})();
 		initRealtimeListeners(profile);
-		return cleanupRealtimeListeners;
+		const stopRequestSync = startRequestSync(profile.id);
+		const stopMembershipSync = startMembershipNotificationSync(profile.id);
+		return () => {
+			stopRequestSync();
+			stopMembershipSync();
+			cleanupRealtimeListeners();
+		};
 	}, [profile, subscriberEntitlementsRaw]);
 
 	return null;
